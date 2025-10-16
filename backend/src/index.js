@@ -16,7 +16,7 @@ const PORT = process.env.PORT
 app.use(express.json({limit: "8mb"}));
 app.use(cookieParser());
 app.use(cors({
-    origin: process.env.NETWORK_URL,
+    origin: process.env.FRONTEND_URL,
     credentials: true
 }))
 
@@ -24,7 +24,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/messages",messageRoutes);
 
 
-server.listen(PORT,"0.0.0.0",() => {
+server.listen(PORT,() => {
     console.log("Server Running on Port: "+PORT);
     connectDB()
 })
