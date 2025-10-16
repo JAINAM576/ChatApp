@@ -78,7 +78,7 @@ export const logout = (req, res) => {
       maxAge: 0, // Set maxAge to 0 to expire it immediately
       httpOnly: true,
       secure: process.env.NODE_ENV !== "development",
-      sameSite: "none", // MUST match the login cookie's SameSite attribute
+      sameSite: "lax", // MUST match the login cookie's SameSite attribute
     });
 
     res.status(200).json({ message: "Logged out successfully" });
