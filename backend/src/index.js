@@ -23,6 +23,12 @@ app.use(cors({
 app.use("/api/auth", authRoutes);
 app.use("/api/messages",messageRoutes);
 
+app.get('/',(req,res)=>{
+    res.send({
+        activeStatus:true,
+        error:false,
+    })
+})
 
 server.listen(PORT,() => {
     console.log("Server Running on Port: "+PORT);
