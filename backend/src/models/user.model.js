@@ -19,6 +19,14 @@ import mongoose from "mongoose";
             type: String,
             default: "",
         },
+        publicKey: {
+            type: String,
+            default: "",
+        },
+        privateKey: {
+            type: String,
+            default: "",
+        },
     },
     {timestamps: true}
 );

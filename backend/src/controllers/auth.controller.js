@@ -2,6 +2,7 @@ import User from "../models/user.model.js"
 import {generateToken} from "../lib/utils.js"
 import bcrypt from "bcryptjs"
 import cloudinary from "../lib/cloudinary.js"
+import { generateKeyPair } from "../lib/encryption.js"
 
 export const signup = async(req,res) =>{
     const {fullName,email,password} = req.body
@@ -21,10 +22,15 @@ export const signup = async(req,res) =>{
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(password,salt)
         
+        // Generate RSA key pair for end-to-end encryption
+        const { publicKey, privateKey } = generateKeyPair();
+        
         const newUser = new User({
             fullName,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            publicKey,
+            privateKey
         })
 
         if(newUser){
@@ -36,6 +42,7 @@ export const signup = async(req,res) =>{
                 fullName: newUser.fullName,
                 email: newUser.email,
                 profilePic: newUser.profilePic,
+                publicKey: newUser.publicKey,
             });
         } else{
             res.status(400).json({message: "Invalid user data"});
@@ -65,6 +72,7 @@ export const login = async(req,res) =>{
             fullName:user.fullName,
             email:user.email,
             profilePic:user.profilePic,
+            publicKey:user.publicKey,
         })
     } catch(error){
         console.log("Error in login controller", error.message);
