@@ -7,7 +7,6 @@ import {connectDB} from "./lib/db.js"
 import cors from 'cors'
 import {app,server} from "./lib/socket.js"
 
-
 // const app = express();
 
 dotenv.config()
