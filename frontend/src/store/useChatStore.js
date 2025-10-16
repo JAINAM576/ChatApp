@@ -7,6 +7,7 @@ import {useEncryptionStore} from './useEncryptionStore'
 export const useChatStore = create((set,get) => ({
     messages: [],
     users: [],
+    pinnedChats: [],
     selectedUser: null,
     isUsersLoading: false,
     isMessagesLoading: false,
@@ -16,11 +17,52 @@ export const useChatStore = create((set,get) => ({
         try{
             const res = await axiosInstance.get("/messages/users");
             set({users: res.data});
+            // Also get pinned chats
+            get().getPinnedChats();
         } catch(error){
             toast.error(error.response.data.message);
         } finally {
             set({isUsersLoading: false});
         }
+    },
+
+    getPinnedChats: async () => {
+        try{
+            const res = await axiosInstance.get("/messages/pinned/chats");
+            set({pinnedChats: res.data});
+        } catch(error){
+            console.error("Error getting pinned chats:", error);
+        }
+    },
+
+    pinChat: async (userId) => {
+        try{
+            await axiosInstance.post(`/messages/pin/${userId}`);
+            const {pinnedChats} = get();
+            const userToPin = get().users.find(user => user._id === userId);
+            if(userToPin && !pinnedChats.find(chat => chat._id === userId)) {
+                set({pinnedChats: [...pinnedChats, userToPin]});
+            }
+            toast.success("Chat pinned successfully");
+        } catch(error){
+            toast.error(error.response?.data?.error || "Failed to pin chat");
+        }
+    },
+
+    unpinChat: async (userId) => {
+        try{
+            await axiosInstance.post(`/messages/unpin/${userId}`);
+            const {pinnedChats} = get();
+            set({pinnedChats: pinnedChats.filter(chat => chat._id !== userId)});
+            toast.success("Chat unpinned successfully");
+        } catch(error){
+            toast.error(error.response?.data?.error || "Failed to unpin chat");
+        }
+    },
+
+    isChatPinned: (userId) => {
+        const {pinnedChats} = get();
+        return pinnedChats.some(chat => chat._id === userId);
     },
 
     getMessages: async(userId) => {

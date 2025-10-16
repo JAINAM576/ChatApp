@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import EncryptionToggle from "./EncryptionToggle";
+import PinButton from "./PinButton";
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = useChatStore();
@@ -28,6 +29,9 @@ const ChatHeader = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Pin Button */}
+          <PinButton userId={selectedUser._id} />
+          
           {/* Encryption Toggle */}
           <EncryptionToggle />
           

@@ -96,3 +96,68 @@ export const getMyPrivateKey = async(req,res) =>{
         res.status(500).json({error: "Internal server error"});
     }
 }
+
+export const pinChat = async(req, res) => {
+    try {
+        const { id: userToPinId } = req.params;
+        const userId = req.user._id;
+
+        // Check if user exists
+        const userToPin = await User.findById(userToPinId);
+        if (!userToPin) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Check if chat is already pinned
+        const user = await User.findById(userId);
+        if (user.pinnedChats.includes(userToPinId)) {
+            return res.status(400).json({ error: "Chat is already pinned" });
+        }
+
+        // Add to pinned chats
+        await User.findByIdAndUpdate(
+            userId,
+            { $push: { pinnedChats: userToPinId } },
+            { new: true }
+        );
+
+        res.status(200).json({ message: "Chat pinned successfully" });
+    } catch (error) {
+        console.log("Error in pinChat controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const unpinChat = async(req, res) => {
+    try {
+        const { id: userToUnpinId } = req.params;
+        const userId = req.user._id;
+
+        // Remove from pinned chats
+        await User.findByIdAndUpdate(
+            userId,
+            { $pull: { pinnedChats: userToUnpinId } },
+            { new: true }
+        );
+
+        res.status(200).json({ message: "Chat unpinned successfully" });
+    } catch (error) {
+        console.log("Error in unpinChat controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const getPinnedChats = async(req, res) => {
+    try {
+        const userId = req.user._id;
+        
+        const user = await User.findById(userId)
+            .populate('pinnedChats', '-password -privateKey')
+            .select('pinnedChats');
+        
+        res.status(200).json(user.pinnedChats || []);
+    } catch (error) {
+        console.log("Error in getPinnedChats controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
