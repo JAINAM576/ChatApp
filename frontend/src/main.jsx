@@ -7,7 +7,8 @@ import {BrowserRouter} from "react-router-dom";
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter> 
+    {/* App is wrapped inside BrowserRouter which listening every route change */}
       <App />
     </BrowserRouter>
   </StrictMode>,

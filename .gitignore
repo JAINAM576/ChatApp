@@ -12,7 +12,6 @@ node_modules
 dist
 dist-ssr
 *.local
-readme.md
 
 
 # Editor directories and files
