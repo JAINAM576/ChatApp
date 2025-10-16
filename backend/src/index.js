@@ -9,6 +9,8 @@ import {app,server} from "./lib/socket.js"
 
 // const app = express();
 
+connectDB()
+
 dotenv.config()
 const PORT = process.env.PORT
 
@@ -31,5 +33,4 @@ app.get('/',(req,res)=>{
 
 server.listen(PORT,() => {
     console.log("Server Running on Port: "+PORT);
-    connectDB()
 })
