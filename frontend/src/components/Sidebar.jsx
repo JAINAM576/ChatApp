@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
@@ -22,9 +22,17 @@ const Sidebar = () => {
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
+  const [query, setQuery] = useState("");
+
+  // Debounce query
+  const debouncedQuery = useMemo(() => query, [query]);
+
   useEffect(() => {
-    getUsers();
-  }, [getUsers]);
+    const id = setTimeout(() => {
+      getUsers(debouncedQuery || undefined);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [getUsers, debouncedQuery]);
 
   const filteredUsers = showOnlineOnly
     ? users.filter((user) => onlineUsers.includes(user._id))
@@ -73,7 +81,15 @@ const Sidebar = () => {
           </span>
         </div>
       </div>
-      <div className="overflow-y-auto w-full py-3"></div>
+      <div className="border-b border-base-300 w-full p-3 hidden lg:block">
+        <input
+          type="text"
+          placeholder="Search by name"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="input input-sm input-bordered w-full"
+        />
+      </div>
 
       <div className="overflow-y-auto w-full py-3">
         {/* Pinned Chats Section */}
