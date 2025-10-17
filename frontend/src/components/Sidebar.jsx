@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
-import SidebarSkeleton from "./skeletons/SidebarSkeleton";
+// import SidebarSkeleton from "./skeletons/SidebarSkeleton"; // no longer used; kept as reference
+import ContactListSkeleton from "./skeletons/ContactListSkeleton";
 import { Users, Pin } from "lucide-react";
 import PinButton from "./PinButton";
 import ArchiveButton from "./ArchiveButton";
@@ -56,7 +57,7 @@ const Sidebar = () => {
   // Combine with pinned users first
   const sortedUsers = [...pinnedUsers, ...unpinnedUsers];
 
-  if (isUsersLoading) return <SidebarSkeleton />;
+  // We don't return early on loading, to keep the header and search bar visible.
 
   return (
     <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">
@@ -92,6 +93,11 @@ const Sidebar = () => {
       </div>
 
       <div className="overflow-y-auto w-full py-3">
+        {isUsersLoading ? (
+          // Show only the list skeleton so the search bar remains visible
+          <ContactListSkeleton />
+        ) : (
+          <>
         {/* Pinned Chats Section */}
         {pinnedUsers.length > 0 && (
           <div className="mb-4">
@@ -269,6 +275,8 @@ const Sidebar = () => {
 
         {sortedUsers.length === 0 && (
           <div className="text-center text-zinc-500 py-4">No online users</div>
+        )}
+          </>
         )}
       </div>
     </aside>
