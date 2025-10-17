@@ -31,6 +31,18 @@ app.get('/',(req,res)=>{
     })
 })
 
+//eror handler
+app.use((req,res,next)=>{
+    res.status(404).send({message:'Route Not found'});
+});
+
+//global error handler
+app.use((err,req,res,next)=>{
+console.error(err.stack);
+res.status(500).send({message:'Internal Server Error'});
+
+});
+
 server.listen(PORT,() => {
     console.log("Server Running on Port: "+PORT);
 })
