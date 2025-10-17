@@ -1,11 +1,74 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+
+const MessageActions = ({ message, onEdit, onDelete }) => {
+  const isWithinWindow = useMemo(() => {
+    const twoMinutesMs = 2 * 60 * 1000;
+    return Date.now() - new Date(message.createdAt).getTime() <= twoMinutesMs;
+  }, [message.createdAt]);
+
+  const [open, setOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(message.text || "");
+
+  if (!isWithinWindow) return null;
+
+  const saveEdit = async () => {
+    const trimmed = (draft || "").trim();
+    if (!trimmed) return;
+    await onEdit(message._id, trimmed);
+    setIsEditing(false);
+    setOpen(false);
+  };
+
+  const doDelete = async () => {
+    await onDelete(message._id);
+    setOpen(false);
+  };
+
+  return (
+    <div className="mt-1">
+      {!isEditing && (
+        <div className="flex gap-1 self-end opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            className="btn btn-ghost btn-circle btn-xs"
+            onClick={() => { setIsEditing(true); setDraft(message.text || ""); setOpen(false); }}
+            title="Edit"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            className="btn btn-ghost btn-circle btn-xs text-red-500"
+            onClick={doDelete}
+            title="Delete"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
+
+      {isEditing && (
+        <div className="mt-2 flex items-center gap-2 bg-base-200 p-2 rounded">
+          <input
+            className="input input-xs input-bordered w-48"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            autoFocus
+          />
+          <button className="btn btn-xs btn-primary" onClick={saveEdit}>Save</button>
+          <button className="btn btn-xs" onClick={() => { setIsEditing(false); setDraft(message.text || ""); }}>Cancel</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ChatContainer = () => {
   const {
@@ -15,6 +78,8 @@ const ChatContainer = () => {
     selectedUser,
     subscribeToMessages,
     unsubscribeFromMessages,
+    editMessage,
+    deleteMessage,
   } = useChatStore();
   
   const { authUser } = useAuthStore();
@@ -72,7 +137,7 @@ const ChatContainer = () => {
                 {formatMessageTime(message.createdAt)}
               </time>
             </div>
-            <div className="chat-bubble flex flex-col">
+            <div className="chat-bubble flex flex-col relative group">
               {message.image && (
                 <img
                   src={message.image}
@@ -81,6 +146,13 @@ const ChatContainer = () => {
                 />
               )}
               {message.text && <p>{message.text}</p>}
+              {message.senderId === authUser._id && (
+                <MessageActions
+                  message={message}
+                  onEdit={editMessage}
+                  onDelete={deleteMessage}
+                />
+              )}
             </div>
           </div>
         ))}
