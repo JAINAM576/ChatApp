@@ -2,6 +2,7 @@ import User from "../models/user.model.js"
 import {generateToken} from "../lib/utils.js"
 import bcrypt from "bcryptjs"
 import cloudinary from "../lib/cloudinary.js"
+import { generateKeyPair } from "../lib/encryption.js"
 
 export const signup = async(req,res) =>{
     const {fullName,email,password} = req.body
@@ -21,10 +22,15 @@ export const signup = async(req,res) =>{
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(password,salt)
         
+        // Generate RSA key pair for end-to-end encryption
+        const { publicKey, privateKey } = generateKeyPair();
+        
         const newUser = new User({
             fullName,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            publicKey,
+            privateKey
         })
 
         if(newUser){
@@ -36,6 +42,7 @@ export const signup = async(req,res) =>{
                 fullName: newUser.fullName,
                 email: newUser.email,
                 profilePic: newUser.profilePic,
+                publicKey: newUser.publicKey,
             });
         } else{
             res.status(400).json({message: "Invalid user data"});
@@ -65,6 +72,7 @@ export const login = async(req,res) =>{
             fullName:user.fullName,
             email:user.email,
             profilePic:user.profilePic,
+            publicKey:user.publicKey,
         })
     } catch(error){
         console.log("Error in login controller", error.message);
@@ -72,15 +80,21 @@ export const login = async(req,res) =>{
     }
 };
 
-export const logout = (req,res) =>{
-    try{
-        res.cookie("jwt","",{maxAge:0})
-        res.status(200).json({message: "Logged out successfully"});
-    } catch (error){
-        console.log("Error in logout controller", error.message);
-        res.status(500).json({message: "Internal server Error"});
-    }
-}
+export const logout = (req, res) => {
+  try {
+    res.cookie("jwt", "", { // Set the value to an empty string
+      maxAge: 0, // Set maxAge to 0 to expire it immediately
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== "development",
+      sameSite: "none", // MUST match the login cookie's SameSite attribute
+    });
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.log("Error in logout controller", error.message);
+    res.status(500).json({ message: "Internal server Error" });
+  }
+};
 
 export const updateProfile = async(req,res) =>{
     try{

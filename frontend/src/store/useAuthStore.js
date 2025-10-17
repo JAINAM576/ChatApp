@@ -37,7 +37,7 @@ export const useAuthStore = create((set,get) =>({
             toast.success("Account created successfully");
             get().connectSocket()
         } catch(error){
-            toast.error(error.response.data.message);
+            toast.error(error.response?.data?.message);
             console.log("Error in signup: ",error)
         } finally{
             set({isSigningUp: false});
@@ -63,7 +63,11 @@ export const useAuthStore = create((set,get) =>({
             await axiosInstance.post("/auth/logout");
             set({authUser: null});
             toast.success("Logged out successfully");
-            get().disconnectSocket()
+            get().disconnectSocket();
+            
+            // Clear encryption data
+            const { clearEncryptionData } = await import('./useEncryptionStore');
+            clearEncryptionData();
         } catch(error){
             toast.error(error.response.data.message)
         }
@@ -88,7 +92,8 @@ export const useAuthStore = create((set,get) =>({
         const socket = io(BASE_URL,{
             query: {
                 userId: authUser._id,
-            }
+            },
+            withCredentials: true,
         })
         socket.connect()
         set({socket:socket});

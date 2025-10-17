@@ -1,12 +1,23 @@
 import express from "express";
 import {protectRoute} from "../middleware/auth.middleware.js"
-import {getUsersForSidebar,getMessages,sendMessage} from "../controllers/message.controller.js"
+import {getUsersForSidebar,getMessages,sendMessage,getUserPublicKey,getMyPrivateKey,
+    pinChat,unpinChat,getPinnedChats,archiveChat,
+  unarchiveChat,
+  getArchivedChats,} from "../controllers/message.controller.js"
 
 const router = express.Router();
 
 router.get("/users",protectRoute,getUsersForSidebar);
 router.get("/:id",protectRoute,getMessages);
+router.get("/publickey/:id",protectRoute,getUserPublicKey);
+router.get("/privatekey/me",protectRoute,getMyPrivateKey);
+router.get("/pinned/chats",protectRoute,getPinnedChats);
 
 router.post("/send/:id",protectRoute, sendMessage);
+router.post("/pin/:id",protectRoute, pinChat);
+router.post("/unpin/:id",protectRoute, unpinChat);
+router.get("/archived/chats", protectRoute, getArchivedChats);
+router.post("/archive/:id", protectRoute, archiveChat);
+router.post("/unarchive/:id", protectRoute, unarchiveChat);
 
 export default router;
