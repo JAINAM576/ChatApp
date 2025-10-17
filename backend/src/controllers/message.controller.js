@@ -7,7 +7,17 @@ import { generateEncryptionKey, encryptMessage, decryptMessage, encryptWithPubli
 export const getUsersForSidebar = async(req,res) =>{
     try{
         const loggedInUserId = req.user._id;
-        const filteredUsers = await User.find({_id: {$ne:loggedInUserId}}).select("-password -privateKey");
+        const { q } = req.query;
+        const baseFilter = { _id: { $ne: loggedInUserId } };
+
+        const nameFilter = q
+            ? { fullName: { $regex: q, $options: "i" } } // case-insensitive search
+            : {};
+
+        const filteredUsers = await User.find({
+            ...baseFilter,
+            ...nameFilter,
+        }).select("-password -privateKey");
         res.status(200).json(filteredUsers)
     } catch(error){
         console.log("Error in getUsersForSidebar: ",error.message);
