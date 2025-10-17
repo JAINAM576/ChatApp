@@ -19,6 +19,18 @@ import mongoose from "mongoose";
             type: String,
             default: "",
         },
+        pinnedChats: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        }],
+        publicKey: {
+            type: String,
+            default: "",
+        },
+        privateKey: {
+            type: String,
+            default: "",
+        },
     },
     {timestamps: true}
 );

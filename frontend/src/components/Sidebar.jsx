@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
-import { Users } from "lucide-react";
+import { Users, Pin } from "lucide-react";
+import PinButton from "./PinButton";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatStore();
+  const { getUsers, users, pinnedChats, selectedUser, setSelectedUser, isUsersLoading, isChatPinned } = useChatStore();
 
   const {onlineUsers} = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
@@ -17,6 +18,13 @@ const Sidebar = () => {
   const filteredUsers = showOnlineOnly
     ? users.filter((user) => onlineUsers.includes(user._id))
     : users;
+
+  // Separate pinned and unpinned users
+  const pinnedUsers = filteredUsers.filter(user => isChatPinned(user._id));
+  const unpinnedUsers = filteredUsers.filter(user => !isChatPinned(user._id));
+  
+  // Combine with pinned users first
+  const sortedUsers = [...pinnedUsers, ...unpinnedUsers];
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
@@ -43,41 +51,109 @@ const Sidebar = () => {
       </div>
 
       <div className="overflow-y-auto w-full py-3">
-        {filteredUsers.map((user) => (
-          <button
+        {/* Pinned Chats Section */}
+        {pinnedUsers.length > 0 && (
+          <div className="mb-4">
+            <div className="px-3 mb-2 flex items-center gap-2 text-xs font-medium text-base-content/70 uppercase tracking-wider">
+              <Pin className="size-3" />
+              <span className="hidden lg:inline">Pinned</span>
+            </div>
+            {pinnedUsers.map((user) => (
+              <div
+                key={`pinned-${user._id}`}
+                className={`
+                  w-full p-3 flex items-center gap-3 group relative
+                  hover:bg-base-300 transition-colors
+                  ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
+                `}
+              >
+                <button
+                  onClick={() => setSelectedUser(user)}
+                  className="flex items-center gap-3 flex-1 min-w-0"
+                >
+                  <div className="relative mx-auto lg:mx-0">
+                    <img
+                      src={user.profilePic || "/avatar.png"}
+                      alt={user.name}
+                      className="size-12 object-cover rounded-full"
+                    />
+                    {onlineUsers.includes(user._id) && (
+                      <span
+                        className="absolute bottom-0 right-0 size-3 bg-green-500 
+                        rounded-full ring-2 ring-zinc-900"
+                      />
+                    )}
+                  </div>
+
+                  {/* User info - only visible on larger screens */}
+                  <div className="hidden lg:block text-left min-w-0">
+                    <div className="font-medium truncate">{user.fullName}</div>
+                    <div className="text-sm text-zinc-400">
+                      {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                    </div>
+                  </div>
+                </button>
+                
+                {/* Pin button - visible on hover */}
+                <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity">
+                  <PinButton userId={user._id} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Regular Chats Section */}
+        {unpinnedUsers.length > 0 && pinnedUsers.length > 0 && (
+          <div className="px-3 mb-2 text-xs font-medium text-base-content/70 uppercase tracking-wider">
+            <span className="hidden lg:inline">All Chats</span>
+          </div>
+        )}
+        
+        {unpinnedUsers.map((user) => (
+          <div
             key={user._id}
-            onClick={() => setSelectedUser(user)}
             className={`
-              w-full p-3 flex items-center gap-3
+              w-full p-3 flex items-center gap-3 group relative
               hover:bg-base-300 transition-colors
               ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
             `}
           >
-            <div className="relative mx-auto lg:mx-0">
-              <img
-                src={user.profilePic || "/avatar.png"}
-                alt={user.name}
-                className="size-12 object-cover rounded-full"
-              />
-              {onlineUsers.includes(user._id) && (
-                <span
-                  className="absolute bottom-0 right-0 size-3 bg-green-500 
-                  rounded-full ring-2 ring-zinc-900"
+            <button
+              onClick={() => setSelectedUser(user)}
+              className="flex items-center gap-3 flex-1 min-w-0"
+            >
+              <div className="relative mx-auto lg:mx-0">
+                <img
+                  src={user.profilePic || "/avatar.png"}
+                  alt={user.name}
+                  className="size-12 object-cover rounded-full"
                 />
-              )}
-            </div>
-
-            {/* User info - only visible on larger screens */}
-            <div className="hidden lg:block text-left min-w-0">
-              <div className="font-medium truncate">{user.fullName}</div>
-              <div className="text-sm text-zinc-400">
-                {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                {onlineUsers.includes(user._id) && (
+                  <span
+                    className="absolute bottom-0 right-0 size-3 bg-green-500 
+                    rounded-full ring-2 ring-zinc-900"
+                  />
+                )}
               </div>
+
+              {/* User info - only visible on larger screens */}
+              <div className="hidden lg:block text-left min-w-0">
+                <div className="font-medium truncate">{user.fullName}</div>
+                <div className="text-sm text-zinc-400">
+                  {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                </div>
+              </div>
+            </button>
+            
+            {/* Pin button - visible on hover */}
+            <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity">
+              <PinButton userId={user._id} />
             </div>
-          </button>
+          </div>
         ))}
 
-        {filteredUsers.length === 0 && (
+        {sortedUsers.length === 0 && (
           <div className="text-center text-zinc-500 py-4">No online users</div>
         )}
       </div>
