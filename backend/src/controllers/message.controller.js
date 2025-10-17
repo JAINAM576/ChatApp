@@ -161,3 +161,63 @@ export const getPinnedChats = async(req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
+// POST /messages/archive/:id
+export const archiveChat = async (req, res) => {
+  try {
+    const { id: chatUserId } = req.params;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (user.archivedChats?.includes(chatUserId)) {
+      return res.status(400).json({ error: "Chat is already archived" });
+    }
+
+    await User.findByIdAndUpdate(
+      userId,
+      { $push: { archivedChats: chatUserId } },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Chat archived successfully" });
+  } catch (error) {
+    console.log("Error in archiveChat:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// POST /messages/unarchive/:id
+export const unarchiveChat = async (req, res) => {
+  try {
+    const { id: chatUserId } = req.params;
+    const userId = req.user._id;
+
+    await User.findByIdAndUpdate(
+      userId,
+      { $pull: { archivedChats: chatUserId } },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Chat unarchived successfully" });
+  } catch (error) {
+    console.log("Error in unarchiveChat:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// GET /messages/archived/chats
+export const getArchivedChats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId)
+      .populate("archivedChats", "-password -privateKey")
+      .select("archivedChats");
+
+    res.status(200).json(user.archivedChats || []);
+  } catch (error) {
+    console.log("Error in getArchivedChats:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

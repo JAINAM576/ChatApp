@@ -4,12 +4,23 @@ import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
 import { Users, Pin } from "lucide-react";
 import PinButton from "./PinButton";
+import ArchiveButton from "./ArchiveButton";
 
 const Sidebar = () => {
-  const { getUsers, users, pinnedChats, selectedUser, setSelectedUser, isUsersLoading, isChatPinned } = useChatStore();
+  const {
+    getUsers,
+    users,
+    pinnedChats,
+    selectedUser,
+    setSelectedUser,
+    isUsersLoading,
+    isChatArchived,
+    isChatPinned,
+  } = useChatStore();
 
-  const {onlineUsers} = useAuthStore();
+  const { onlineUsers } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     getUsers();
@@ -19,10 +30,21 @@ const Sidebar = () => {
     ? users.filter((user) => onlineUsers.includes(user._id))
     : users;
 
-  // Separate pinned and unpinned users
-  const pinnedUsers = filteredUsers.filter(user => isChatPinned(user._id));
-  const unpinnedUsers = filteredUsers.filter(user => !isChatPinned(user._id));
-  
+  // Separate pinned , archived and unpinned , unarchived users
+
+  //for archived users
+  const archivedUsers = filteredUsers.filter((user) =>
+    isChatArchived(user._id)
+  );
+  //for pinned users but not archived one
+  const pinnedUsers = filteredUsers.filter(
+    (user) => isChatPinned(user._id) && !isChatArchived(user._id)
+  );
+  //for users with not pinned and archived
+  const unpinnedUsers = filteredUsers.filter(
+    (user) => !isChatPinned(user._id) && !isChatArchived(user._id)
+  );
+
   // Combine with pinned users first
   const sortedUsers = [...pinnedUsers, ...unpinnedUsers];
 
@@ -46,9 +68,12 @@ const Sidebar = () => {
             />
             <span className="text-sm">Show online only</span>
           </label>
-          <span className="text-xs text-zinc-500">({onlineUsers.length - 1} online)</span>
+          <span className="text-xs text-zinc-500">
+            ({onlineUsers.length - 1} online)
+          </span>
         </div>
       </div>
+      <div className="overflow-y-auto w-full py-3"></div>
 
       <div className="overflow-y-auto w-full py-3">
         {/* Pinned Chats Section */}
@@ -64,7 +89,11 @@ const Sidebar = () => {
                 className={`
                   w-full p-3 flex items-center gap-3 group relative
                   hover:bg-base-300 transition-colors
-                  ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
+                  ${
+                    selectedUser?._id === user._id
+                      ? "bg-base-300 ring-1 ring-base-300"
+                      : ""
+                  }
                 `}
               >
                 <button
@@ -93,13 +122,72 @@ const Sidebar = () => {
                     </div>
                   </div>
                 </button>
-                
+
                 {/* Pin button - visible on hover */}
                 <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity">
                   <PinButton userId={user._id} />
                 </div>
+                {/* Archive / Unarchive button - visible on hover */}
+                <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity mt-1">
+                  <ArchiveButton
+                    userId={user._id}
+                    isArchived={isChatArchived(user._id)}
+                  />
+                </div>
               </div>
             ))}
+          </div>
+        )}
+        {/* Archived Chats Section */}
+        {archivedUsers.length > 0 && (
+          <div className="mb-4">
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className="px-3 mb-2 flex items-center gap-2 text-xs font-medium text-base-content/70 uppercase tracking-wider w-full text-left"
+            >
+              <Pin className="size-3" />
+              <span className="hidden lg:inline">Archived Chats</span>
+              <span className="ml-auto">{showArchived ? "▲" : "▼"}</span>
+            </button>
+
+            {showArchived &&
+              archivedUsers.map((user) => (
+                <div
+                  key={`archived-${user._id}`}
+                  className={`w-full p-3 flex items-center gap-3 group relative hover:bg-base-300 transition-colors
+                  ${
+                    selectedUser?._id === user._id
+                      ? "bg-base-300 ring-1 ring-base-300"
+                      : ""
+                  }`}
+                >
+                  <button
+                    onClick={() => setSelectedUser(user)}
+                    className="flex items-center gap-3 flex-1 min-w-0"
+                  >
+                    <div className="relative mx-auto lg:mx-0">
+                      <img
+                        src={user.profilePic || "/avatar.png"}
+                        alt={user.name}
+                        className="size-12 object-cover rounded-full"
+                      />
+                    </div>
+
+                    <div className="hidden lg:block text-left min-w-0">
+                      <div className="font-medium truncate">
+                        {user.fullName}
+                      </div>
+                      <div className="text-sm text-zinc-400">
+                        Archived {isChatPinned(user._id) && "• Pinned"}
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity mt-1">
+                    <ArchiveButton userId={user._id} isArchived={true} />
+                  </div>
+                </div>
+              ))}
           </div>
         )}
 
@@ -109,14 +197,18 @@ const Sidebar = () => {
             <span className="hidden lg:inline">All Chats</span>
           </div>
         )}
-        
+
         {unpinnedUsers.map((user) => (
           <div
             key={user._id}
             className={`
               w-full p-3 flex items-center gap-3 group relative
               hover:bg-base-300 transition-colors
-              ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
+              ${
+                selectedUser?._id === user._id
+                  ? "bg-base-300 ring-1 ring-base-300"
+                  : ""
+              }
             `}
           >
             <button
@@ -145,10 +237,16 @@ const Sidebar = () => {
                 </div>
               </div>
             </button>
-            
+
             {/* Pin button - visible on hover */}
             <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity">
               <PinButton userId={user._id} />
+            </div>
+            <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity mt-1">
+              <ArchiveButton
+                userId={user._id}
+                isArchived={isChatArchived(user._id)}
+              />
             </div>
           </div>
         ))}
