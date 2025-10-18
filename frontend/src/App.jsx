@@ -9,8 +9,8 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore.js";
 import { useThemeStore } from "./store/useThemeStore.js";
 import { Loader } from "lucide-react";
-import { Toaster } from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
+import { Toaster } from "react-hot-toast"; // Add this import
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -83,7 +83,31 @@ const App = () => {
           />
         </Routes>
       </AnimatePresence>
-      <Toaster />
+      
+      {/* Add Toaster component here - only once in the entire app */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#2d3748',
+            color: '#fff',
+            border: '1px solid #4a5568',
+          },
+          success: {
+            iconTheme: {
+              primary: '#605dff',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#f56565',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </div>
   );
 };
