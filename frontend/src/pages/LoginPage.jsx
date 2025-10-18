@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
 import Footer from "../components/Footer";
 import { FaGoogle, FaGithub } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,13 +20,37 @@ const LoginPage = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  // ✅ Form validation
+  const validateForm = () => {
+    if (!formData.email.trim()) {
+      toast.error("Email is required");
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      toast.error("Invalid email format");
+      return false;
+    }
+    if (!formData.password) {
+      toast.error("Password is required");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // ✅ Scroll to top on form submission
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    login(formData);
+    if (!validateForm()) return;
+
+    try {
+      await login(formData);
+      toast.success("Logged in successfully!");
+    } catch (err) {
+      toast.error(err?.message || "Login failed. Please try again.");
+    }
   };
 
   return (
@@ -132,26 +157,6 @@ const LoginPage = () => {
                       "Sign In"
                     )}
                   </button>
-
-                  {/* <div className="text-center text-gray-400 text-sm">
-                    Or continue with
-                  </div> */}
-
-                  {/* Social Logins */}
-                  {/* <div className="flex gap-4">
-                    <button
-                      type="button"
-                      className="flex-1 flex items-center justify-center gap-2 bg-[#2d3748] text-white py-3 rounded-xl border border-gray-700 hover:bg-gray-700 transition-all duration-200"
-                    >
-                      <FaGoogle /> Google
-                    </button>
-                    <button
-                      type="button"
-                      className="flex-1 flex items-center justify-center gap-2 bg-[#2d3748] text-white py-3 rounded-xl border border-gray-700 hover:bg-gray-700 transition-all duration-200"
-                    >
-                      <FaGithub /> GitHub
-                    </button>
-                  </div> */}
                 </form>
 
                 <div className="text-center mt-6">

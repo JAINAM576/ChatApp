@@ -46,8 +46,14 @@ const SignUpPage = () => {
     // ✅ Scroll to top on submit (to show toast or any success message)
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    const valid = validateForm();
-    if (valid) signup(formData);
+    if (!validateForm()) return;
+
+    try {
+      await signup(formData);
+      toast.success("Account created successfully!");
+    } catch (err) {
+      toast.error(err?.message || "Sign up failed. Please try again.");
+    }
   };
 
   return (
