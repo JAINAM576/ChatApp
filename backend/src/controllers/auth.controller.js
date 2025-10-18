@@ -139,10 +139,15 @@ export const checkAuth = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token");
+    res.clearCookie("jwt", {
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
+        secure: process.env.NODE_ENV !== "development",
+    });
+
     return res.status(200).json({
-      message: "Logout successful",
-      success: true,
+        message: "Logout successful",
+        success: true,
     });
   } catch (error) {
     console.log("Error in logout controller", error.message);
