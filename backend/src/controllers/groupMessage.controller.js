@@ -1,6 +1,7 @@
 import Message from "../models/message.model.js";
 import Group from "../models/group.model.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
+import cloudinary from "../lib/cloudinary.js";
 
 export const sendGroupMessage = async (req, res) => {
   try {
@@ -13,8 +14,16 @@ export const sendGroupMessage = async (req, res) => {
 
     let imageUrl = null;
     if (image) {
-      const uploadResponse = await cloudinary.uploader.upload(image);
-      imageUrl = uploadResponse.secure_url;
+      // If image is an external URL (e.g., GIPHY), store as-is; otherwise upload base64 to Cloudinary
+      if (
+        typeof image === "string" &&
+        (image.startsWith("http://") || image.startsWith("https://"))
+      ) {
+        imageUrl = image;
+      } else {
+        const uploadResponse = await cloudinary.uploader.upload(image);
+        imageUrl = uploadResponse.secure_url;
+      }
     }
 
     const newMessage = await Message.create({
