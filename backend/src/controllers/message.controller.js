@@ -51,9 +51,17 @@ export const sendMessage = async(req,res) =>{
         let imageUrl;
         
         if(image){
-            // upload base64 image to cloundinary
-            const uploadResponse = await cloudinary.uploader.upload(image);
-            imageUrl = uploadResponse.secure_url;
+            // ===== GIF HANDLING START =====
+            // Check if image is a GIF URL (from Giphy) or base64 image data
+            if(image.startsWith('http://') || image.startsWith('https://')){
+                // It's a GIF URL from Giphy, use it directly
+                imageUrl = image;
+            } else {
+                // It's a base64 image, upload to Cloudinary
+                const uploadResponse = await cloudinary.uploader.upload(image);
+                imageUrl = uploadResponse.secure_url;
+            }
+            // ===== GIF HANDLING END =====
         }
 
         const newMessage = new Message({
