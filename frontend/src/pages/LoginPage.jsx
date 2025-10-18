@@ -47,12 +47,7 @@ const LoginPage = () => {
 
     if (!validateForm()) return;
 
-    try {
-      await login(formData);
-      toast.success("Logged in successfully!");
-    } catch (err) {
-      toast.error(err?.message || "Login failed. Please try again.");
-    }
+    await login(formData);
   };
 
   return (
