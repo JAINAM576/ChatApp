@@ -35,12 +35,8 @@ const LoginPage = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    try {
-      await login(formData);
-      toast.success("Logged in successfully!");
-    } catch (err) {
-      toast.error(err?.message || "Login failed. Please try again.");
-    }
+    // ✅ FIXED: Just call login, it handles success/error toasts internally
+    await login(formData);
   };
 
   return (
