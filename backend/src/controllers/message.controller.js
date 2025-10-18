@@ -221,3 +221,104 @@ export const getArchivedChats = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// PUT /messages/edit/:messageId
+export const editMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { text } = req.body;
+    const userId = req.user._id.toString();
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: "Text is required" });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+
+    if (message.senderId.toString() !== userId) {
+      return res.status(403).json({ error: "Not allowed" });
+    }
+
+    // Only allow editing non-encrypted text messages
+    if (message.isEncrypted || !message.text) {
+      return res.status(400).json({ error: "Only plain text messages can be edited" });
+    }
+
+    // Within 2 minutes
+    const twoMinutesMs = 2 * 60 * 1000;
+    if (Date.now() - new Date(message.createdAt).getTime() > twoMinutesMs) {
+      return res.status(400).json({ error: "Edit window expired" });
+    }
+
+    // Must be last message sent by me in this conversation
+    const lastMyMsg = await Message.findOne({
+      senderId: userId,
+      receiverId: message.receiverId,
+    })
+      .sort({ createdAt: -1 })
+      .limit(1);
+
+    if (!lastMyMsg || lastMyMsg._id.toString() !== messageId) {
+      return res.status(400).json({ error: "Only the last message can be edited" });
+    }
+
+    message.text = text.trim();
+    await message.save();
+
+    const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("messageUpdated", message);
+    }
+
+    res.status(200).json(message);
+  } catch (error) {
+    console.log("Error in editMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// DELETE /messages/delete/:messageId
+export const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id.toString();
+
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+
+    if (message.senderId.toString() !== userId) {
+      return res.status(403).json({ error: "Not allowed" });
+    }
+
+    // Within 2 minutes
+    const twoMinutesMs = 2 * 60 * 1000;
+    if (Date.now() - new Date(message.createdAt).getTime() > twoMinutesMs) {
+      return res.status(400).json({ error: "Delete window expired" });
+    }
+
+    // Must be last message sent by me in this conversation
+    const lastMyMsg = await Message.findOne({
+      senderId: userId,
+      receiverId: message.receiverId,
+    })
+      .sort({ createdAt: -1 })
+      .limit(1);
+
+    if (!lastMyMsg || lastMyMsg._id.toString() !== messageId) {
+      return res.status(400).json({ error: "Only the last message can be deleted" });
+    }
+
+    await Message.findByIdAndDelete(messageId);
+
+    const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("messageDeleted", { _id: messageId });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.log("Error in deleteMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
