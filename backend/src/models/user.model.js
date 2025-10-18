@@ -1,38 +1,51 @@
 import mongoose from "mongoose";
- const userSchema = new mongoose.Schema(
-    {
-        email: {
-            type: String,
-            required: true,
-            unique: true,
-        },
-        fullName: {
-            type: String,
-            required: true,
-        },
-        password: {
-            type: String,
-            required: true,
-            minlength: 6,
-        },
-        profilePic: {
-            type: String,
-            default: "",
-        },
-        pinnedChats: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        }],
-        publicKey: {
-            type: String,
-            default: "",
-        },
-        privateKey: {
-            type: String,
-            default: "",
-        },
+const userSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
     },
-    {timestamps: true}
+    fullName: {
+      type: String,
+      required: true,
+    },
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+    },
+    profilePic: {
+      type: String,
+      default: "",
+    },
+    pinnedChats: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    archivedChats: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    publicKey: {
+      type: String,
+      default: "",
+    },
+    privateKey: {
+      type: String,
+      default: "",
+    },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { timestamps: true }
 );
 
 const User = mongoose.model("User", userSchema);

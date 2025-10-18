@@ -13,6 +13,7 @@ const LoginPage = () => {
     email: "",
     password: "",
   });
+
   const { login, isLoggingIn } = useAuthStore();
 
   // ✅ Scroll to top when component mounts
@@ -21,6 +22,7 @@ const LoginPage = () => {
   }, []);
 
   // ✅ Form validation
+ 
   const validateForm = () => {
     if (!formData.email.trim()) {
       toast.error("Email is required");

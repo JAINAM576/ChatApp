@@ -3,10 +3,16 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import EncryptionToggle from "./EncryptionToggle";
 import PinButton from "./PinButton";
+import { useEffect, useState } from "react";
 
 const ChatHeader = () => {
-  const { selectedUser, setSelectedUser } = useChatStore();
-  const { onlineUsers } = useAuthStore();
+  const { selectedUser, setSelectedUser, userLastSeen } = useChatStore();
+  const { onlineUsers, typingUsers } = useAuthStore();
+  const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    setIsTyping(typingUsers[selectedUser._id] || false);
+  }, [typingUsers, selectedUser._id]);
 
   return (
     <div className="p-2.5 border-b border-base-300">
@@ -23,7 +29,7 @@ const ChatHeader = () => {
           <div>
             <h3 className="font-medium">{selectedUser.fullName}</h3>
             <p className="text-sm text-base-content/70">
-              {onlineUsers.includes(selectedUser._id) ? "Online" : "Offline"}
+              {isTyping ? "Typing..." : onlineUsers.includes(selectedUser._id) ? "Online" : "Offline"}
             </p>
           </div>
         </div>

@@ -13,17 +13,16 @@ export const useAuthStore = create((set,get) =>({
     isCheckingAuth: true,
     onlineUsers: [],
     socket: null,
+    typingUsers: {},
 
     checkAuth: async() =>{
         try{
             const res = await axiosInstance.get("/auth/check");
             set({authUser: res.data})
             get().connectSocket()
-
         } catch(error){
             set({authUser: null})
             console.log("Error in checkAuth: ",error)
-
         } finally{
             set({isCheckingAuth:false})
         }
@@ -37,7 +36,7 @@ export const useAuthStore = create((set,get) =>({
             toast.success("Account created successfully");
             get().connectSocket()
         } catch(error){
-            toast.error(error.response.data.message);
+            toast.error(error.response?.data?.message);
             console.log("Error in signup: ",error)
         } finally{
             set({isSigningUp: false});
@@ -100,10 +99,23 @@ export const useAuthStore = create((set,get) =>({
         socket.on("getOnlineUsers",(userIds) => {
             set({onlineUsers: userIds})
         })
+
+        socket.on("userTyping", ({ userId }) => {
+            set((state) => ({
+                typingUsers: { ...state.typingUsers, [userId]: true }
+            }));
+        });
+
+        socket.on("userStopTyping", ({ userId }) => {
+            set((state) => {
+                const newTypingUsers = { ...state.typingUsers };
+                delete newTypingUsers[userId];
+                return { typingUsers: newTypingUsers };
+            });
+        });
     },
 
     disconnectSocket: () => {
         if(get().socket?.connected) get().socket.disconnect();
     }, 
-
 }))
