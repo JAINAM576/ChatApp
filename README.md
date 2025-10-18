@@ -33,7 +33,7 @@ A **real-time chat app** built with the **MERN Stack**, **Socket.io**, **Tailwin
 
 ## ⚙️ Environment Variables
 
-Create a `.env` file in your `server/` directory with the following keys:
+Create a `.env` file in your `backend/` directory with the following keys:
 
 ```env
 MONGODB_URI=
@@ -49,18 +49,30 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
 NETWORK_URL=http://192.168.1.25:5173
+````
 
+```bash
 git clone <your-github-repo-link>
-cd chat-app
+cd ChatApp
 
-cd server
+cd backend
+npm install
+```
+
+Create a `.env` file in your `frontend/` directory with the following keys:
+
+```env
+VITE_GIPHY_API=
+```
+
+```bash
+cd ../frontend
 npm install
 
-cd ../client
-npm install
-
-cd server
+cd ../backend
 npm run dev
 
-cd ../client
+cd ../frontend
 npm run dev
+```
+

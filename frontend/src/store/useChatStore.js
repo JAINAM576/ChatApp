@@ -204,12 +204,44 @@ export const useChatStore = create((set, get) => ({
         messages: [...get().messages, newMessage],
       });
     });
+
+    socket.on("messageUpdated", (updated) => {
+      set({
+        messages: get().messages.map((m) => (m._id === updated._id ? updated : m)),
+      });
+    });
+
+    socket.on("messageDeleted", ({ _id }) => {
+      set({ messages: get().messages.filter((m) => m._id !== _id) });
+    });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
     socket.off("newMessage");
+    socket.off("messageUpdated");
+    socket.off("messageDeleted");
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
+
+  editMessage: async (messageId, newText) => {
+    try {
+      const res = await axiosInstance.put(`/messages/edit/${messageId}`, { text: newText });
+      set({
+        messages: get().messages.map((m) => (m._id === messageId ? res.data : m)),
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to edit message");
+    }
+  },
+
+  deleteMessage: async (messageId) => {
+    try {
+      await axiosInstance.delete(`/messages/delete/${messageId}`);
+      set({ messages: get().messages.filter((m) => m._id !== messageId) });
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to delete message");
+    }
+  },
 }));

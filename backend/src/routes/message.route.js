@@ -3,7 +3,7 @@ import {protectRoute} from "../middleware/auth.middleware.js"
 import {getUsersForSidebar,getMessages,sendMessage,getUserPublicKey,getMyPrivateKey,
     pinChat,unpinChat,getPinnedChats,archiveChat,
   unarchiveChat,
-  getArchivedChats,} from "../controllers/message.controller.js"
+  getArchivedChats, editMessage, deleteMessage} from "../controllers/message.controller.js"
 
 const router = express.Router();
 
@@ -19,5 +19,7 @@ router.post("/unpin/:id",protectRoute, unpinChat);
 router.get("/archived/chats", protectRoute, getArchivedChats);
 router.post("/archive/:id", protectRoute, archiveChat);
 router.post("/unarchive/:id", protectRoute, unarchiveChat);
+router.put("/edit/:messageId", protectRoute, editMessage);
+router.delete("/delete/:messageId", protectRoute, deleteMessage);
 
 export default router;
