@@ -139,10 +139,11 @@ export const checkAuth = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("jwt", {
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-        secure: process.env.NODE_ENV !== "development",
+    res.cookie("jwt", "", { // Set the value to an empty string
+      maxAge: 0, // Set maxAge to 0 to expire it immediately
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== "development",
+      sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
     });
 
     return res.status(200).json({
