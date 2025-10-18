@@ -36,14 +36,14 @@ const Footer = () => {
               >
                 <Github className="w-5 h-5" />
               </a>
-              {/* <a
-                href="https://twitter.com"
+              <a
+                href="https://x.com/PritamK38448085"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-9 h-9 rounded-lg bg-[#2d3748] hover:bg-[#3d4758] flex items-center justify-center text-gray-400 hover:text-blue-500 transition-all duration-200"
               >
                 <Twitter className="w-5 h-5" />
-              </a> */}
+              </a>
               <a
                 href="https://www.linkedin.com/in/pritam-nitj/"
                 target="_blank"
