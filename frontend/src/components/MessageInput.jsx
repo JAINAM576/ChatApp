@@ -5,11 +5,12 @@ import { useAuthStore } from "../store/useAuthStore";
 import { Image, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
 
-const MessageInput = () => {
+const MessageInput = ({ isGroup = false }) => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage, selectedUser } = useChatStore();
+  const { sendMessage, sendGroupMessage, selectedGroup, selectedUser } =
+    useChatStore();
   const { socket } = useAuthStore();
   const typingTimeoutRef = useRef(null);
 
@@ -117,21 +118,34 @@ const handleSendMessage = async (e) => {
   e.preventDefault();
   if (!text.trim() && !imagePreview) return;
 
-  try {
-    await sendMessage({
-      text: text.trim(),
-      image: imagePreview, // Contains either image data URL or GIF URL
-   
-    });
+ try {
+      const messageData = {
+        text: text.trim(),
+        image: imagePreview,
+      };
 
-    // Clear form
-    setText("");
-    setImagePreview(null);
-    setSelectedGifUrl(null); // ADDED: Clear GIF URL
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  } catch (error) {
-    console.error("Failed to send message:", error);
-  }
+      if (isGroup) {
+        if (!selectedGroup?._id) {
+          toast.error("No group selected!");
+          return;
+        }
+        await sendGroupMessage(selectedGroup._id, messageData);
+      } else {
+        // ✅ Send direct message
+        if (!selectedUser?._id) {
+          toast.error("No user selected!");
+          return;
+        }
+        await sendMessage(messageData);
+      }
+
+      setText("");
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast.error("Failed to send message");
+    }
 };
 
   // Handle typing events

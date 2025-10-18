@@ -3,9 +3,10 @@ import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 // import SidebarSkeleton from "./skeletons/SidebarSkeleton"; // no longer used; kept as reference
 import ContactListSkeleton from "./skeletons/ContactListSkeleton";
-import { Users, Pin } from "lucide-react";
+import { Users, Pin, UsersRound, X } from "lucide-react";
 import PinButton from "./PinButton";
 import ArchiveButton from "./ArchiveButton";
+import GroupSidebarIcon from "./groupsSidebarIcon";
 
 const formatLastSeen = (lastSeen) => {
   if (!lastSeen) return "";
@@ -27,17 +28,25 @@ const Sidebar = () => {
   const {
     getUsers,
     users,
+    getGroups,
+    groups,
+    addGroup,
     pinnedChats,
     selectedUser,
     setSelectedUser,
+    selectedGroup,
+    setSelectedGroup,
     isUsersLoading,
+    isGroupsLoading,
     isChatArchived,
     isChatPinned,
+    isGroupCreating,
   } = useChatStore();
 
   const { onlineUsers } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [createGroup, setCreateGroup] = useState(false);
 
   const [query, setQuery] = useState("");
 
@@ -50,6 +59,10 @@ const Sidebar = () => {
     }, 300);
     return () => clearTimeout(id);
   }, [getUsers, debouncedQuery]);
+
+  useEffect(() => {
+    getGroups();
+  }, []);
 
   const filteredUsers = showOnlineOnly
     ? users.filter((user) => onlineUsers.includes(user._id))
@@ -72,16 +85,88 @@ const Sidebar = () => {
 
   // Combine with pinned users first
   const sortedUsers = [...pinnedUsers, ...unpinnedUsers];
+  const [groupName, setGroupName] = useState("");
 
   // We don't return early on loading, to keep the header and search bar visible.
+  const handleCreateGroup = () => {
+    if (!groupName.trim()) return alert("Please enter a group name.");
+    addGroup(JSON.stringify({ name: groupName }));
+
+    setCreateGroup(false);
+    setGroupName("");
+  };
+
+  useEffect(() => {}, [selectedGroup]);
+
+  if (isUsersLoading || isGroupsLoading || isGroupCreating)
+    return <ContactListSkeleton />;
 
   return (
     <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">
-      <div className="border-b border-base-300 w-full p-5">
-        <div className="flex items-center gap-2">
-          <Users className="size-6" />
-          <span className="font-medium hidden lg:block">Contacts</span>
+      <div className="border-b border-base-300 w-full p-5 relative">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Users className="size-6" />
+            <span className="font-medium hidden lg:block">Contacts</span>
+          </div>
+          <button
+            className="flex items-center gap-0.5 btn-success text-white btn btn-sm"
+            onClick={() => setCreateGroup(true)}
+          >
+            <UsersRound size={18} />
+            <span>Create Group</span>
+          </button>
         </div>
+
+        {/* Modal */}
+        {createGroup && (
+          <div
+            onClick={() => setCreateGroup(false)}
+            className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50"
+          >
+            {/* Modal Box */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-base-200 w-80 rounded-2xl shadow-lg p-5 relative animate-fadeIn"
+            >
+              {/* Cancel (X) Button */}
+              <button
+                onClick={() => setCreateGroup(false)}
+                className="absolute top-3 right-3 text-white hover:text-gray-300"
+              >
+                <X size={20} />
+              </button>
+
+              <h2 className="text-lg font-semibold mb-3 text-white">
+                Create New Group
+              </h2>
+
+              <input
+                type="text"
+                placeholder="Enter group name"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none"
+              />
+
+              <div className="flex justify-end gap-2 mt-5">
+                <button
+                  onClick={() => setCreateGroup(false)}
+                  className="px-3 py-1.5 rounded-md text-sm bg-gray-200 hover:bg-gray-300 text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateGroup}
+                  className="px-3 py-1.5 rounded-md text-sm btn btn-sm btn-success text-white"
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TODO: Online filter toggle */}
         <div className="mt-3 hidden lg:flex items-center gap-2">
           <label className="cursor-pointer flex items-center gap-2">
@@ -135,7 +220,10 @@ const Sidebar = () => {
                 `}
               >
                 <button
-                  onClick={() => setSelectedUser(user)}
+                  onClick={() => {
+                    setSelectedUser(user);
+                    setSelectedGroup({});
+                  }}
                   className="flex items-center gap-3 flex-1 min-w-0"
                 >
                   <div className="relative mx-auto lg:mx-0">
@@ -200,7 +288,10 @@ const Sidebar = () => {
                   }`}
                 >
                   <button
-                    onClick={() => setSelectedUser(user)}
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setSelectedGroup({});
+                    }}
                     className="flex items-center gap-3 flex-1 min-w-0"
                   >
                     <div className="relative mx-auto lg:mx-0">
@@ -250,7 +341,9 @@ const Sidebar = () => {
             `}
           >
             <button
-              onClick={() => setSelectedUser(user)}
+              onClick={() => {
+                setSelectedUser(user), setSelectedGroup({});
+              }}
               className="flex items-center gap-3 flex-1 min-w-0"
             >
               <div className="relative mx-auto lg:mx-0">
@@ -288,6 +381,22 @@ const Sidebar = () => {
             </div>
           </div>
         ))}
+
+        {groups.length > 0 &&
+          groups.map((group) => {
+            const isActive = group?._id == selectedGroup?._id ?? false;
+            return (
+              <GroupSidebarIcon
+                key={group._id}
+                group={group}
+                isActive={isActive}
+                onClick={() => {
+                  setSelectedGroup(group);
+                  setSelectedUser(null);
+                }}
+              />
+            );
+          })}
 
         {sortedUsers.length === 0 && (
           <div className="text-center text-zinc-500 py-4">No online users</div>

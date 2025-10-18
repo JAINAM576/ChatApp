@@ -7,12 +7,19 @@ import { useEncryptionStore } from "./useEncryptionStore";
 export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
+  groups: [],
+  groupMessages: [],
+  addGroup: "",
   pinnedChats: [],
   archivedChats: [],
   selectedUser: null,
+  selectedGroup: null,
   isUsersLoading: false,
   isMessagesLoading: false,
   userLastSeen: {},
+  isGroupsLoading: false,
+  isGroupMessagesLoading: false,
+  isGroupCreating: false,
 
   getUsers: async (q) => {
     set({ isUsersLoading: true });
@@ -242,6 +249,121 @@ export const useChatStore = create((set, get) => ({
       set({ messages: get().messages.filter((m) => m._id !== messageId) });
     } catch (error) {
       toast.error(error.response?.data?.error || "Failed to delete message");
+    }
+  },
+  
+  setSelectedGroup: (selectedGroup) => set({ selectedGroup }),
+
+  getGroups: async () => {
+    set({ isGroupsLoading: true });
+    try {
+      const res = await axiosInstance.get("/groups/my-groups");
+      set({ groups: res.data.groups || [] });
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch groups");
+    } finally {
+      set({ isGroupsLoading: false });
+    }
+  },
+
+  addGroup: async (groupData) => {
+    set({ isGroupCreating: true });
+    try {
+      const res = await axiosInstance.post("/groups/create", groupData, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      toast.success(res.data.message || "Group created successfully!");
+
+      await get().getGroups();
+      return res.data.group;
+    } catch (error) {
+      console.error("Error creating group:", error);
+      toast.error(error.response?.data?.message || "Failed to create group");
+    } finally {
+      set({ isGroupCreating: false });
+    }
+  },
+
+  getGroupMessages: async (groupId) => {
+    set({ isGroupMessagesLoading: true });
+    try {
+      const res = await axiosInstance.get(`/group-messages/${groupId}`);
+      set({ groupMessages: res.data.messages || [] });
+    } catch (error) {
+      console.error("Error fetching group messages:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to load group messages"
+      );
+    } finally {
+      set({ isGroupMessagesLoading: false });
+    }
+  },
+
+  sendGroupMessage: async (groupId, messageData) => {
+    try {
+      const res = await axiosInstance.post(
+        `/group-messages/send/${groupId}`,
+        messageData
+      );
+    } catch (error) {
+      console.error("Error sending group message:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to send group message"
+      );
+    }
+  },
+
+  subscribeToGroupMessages: () => {
+    const { selectedGroup } = get();
+    if (!selectedGroup) return;
+    const socket = useAuthStore.getState().socket;
+
+    socket.on("newGroupMessage", (newMessage) => {
+      if (newMessage.groupId !== selectedGroup._id) return;
+
+      const { groupMessages } = get();
+      const currentUser = useAuthStore.getState().authUser;
+      if (newMessage.senderId === currentUser._id) {
+        return;
+      }
+
+      const exists = groupMessages.some((msg) => msg._id === newMessage._id);
+      if (exists) {
+        return;
+      }
+      set({ groupMessages: [...groupMessages, newMessage] });
+    });
+  },
+
+  unsubscribeFromGroupMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    socket.off("newGroupMessage");
+  },
+
+  addGroupMembers: async (groupId, userIds) => {
+    try {
+      const res = await axiosInstance.post(
+        `/groups/${groupId}/add-members`,
+        { userIds },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      toast.success(res.data.message || "Members added successfully!");
+
+      set((state) => ({
+        groups: state.groups.map((group) =>
+          group._id === groupId
+            ? { ...group, members: res.data.members }
+            : group
+        ),
+      }));
+
+      return res.data;
+    } catch (error) {
+      console.error("Error adding members:", error);
+      toast.error(error.response?.data?.message || "Failed to add members");
     }
   },
 }));
