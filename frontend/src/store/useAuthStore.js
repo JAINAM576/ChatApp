@@ -13,6 +13,7 @@ export const useAuthStore = create((set,get) =>({
     isCheckingAuth: true,
     onlineUsers: [],
     socket: null,
+    typingUsers: {},
 
     checkAuth: async() =>{
         try{
@@ -98,6 +99,20 @@ export const useAuthStore = create((set,get) =>({
         socket.on("getOnlineUsers",(userIds) => {
             set({onlineUsers: userIds})
         })
+
+        socket.on("userTyping", ({ userId }) => {
+            set((state) => ({
+                typingUsers: { ...state.typingUsers, [userId]: true }
+            }));
+        });
+
+        socket.on("userStopTyping", ({ userId }) => {
+            set((state) => {
+                const newTypingUsers = { ...state.typingUsers };
+                delete newTypingUsers[userId];
+                return { typingUsers: newTypingUsers };
+            });
+        });
     },
 
     disconnectSocket: () => {

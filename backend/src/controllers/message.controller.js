@@ -17,7 +17,7 @@ export const getUsersForSidebar = async(req,res) =>{
         const filteredUsers = await User.find({
             ...baseFilter,
             ...nameFilter,
-        }).select("-password -privateKey");
+        }).select("-password -privateKey -lastSeen");
         res.status(200).json(filteredUsers)
     } catch(error){
         console.log("Error in getUsersForSidebar: ",error.message);
@@ -170,7 +170,7 @@ export const getPinnedChats = async(req, res) => {
         const userId = req.user._id;
         
         const user = await User.findById(userId)
-            .populate('pinnedChats', '-password -privateKey')
+            .populate('pinnedChats', '-password -privateKey -lastSeen')
             .select('pinnedChats');
         
         res.status(200).json(user.pinnedChats || []);
@@ -230,7 +230,7 @@ export const getArchivedChats = async (req, res) => {
   try {
     const userId = req.user._id;
     const user = await User.findById(userId)
-      .populate("archivedChats", "-password -privateKey")
+      .populate("archivedChats", "-password -privateKey -lastSeen")
       .select("archivedChats");
 
     res.status(200).json(user.archivedChats || []);
