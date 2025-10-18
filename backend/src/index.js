@@ -7,10 +7,8 @@ import { connectDB } from "./lib/db.js";
 import cors from "cors";
 import { app, server } from "./lib/socket.js";
 
-// ✅ Load environment variables FIRST
 dotenv.config();
 
-// ✅ Then connect to the database
 connectDB();
 
 const PORT = process.env.PORT || 5000;
@@ -19,7 +17,7 @@ app.use(express.json({ limit: "8mb" }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: [process.env.NETWORK_URL || "http://localhost:5173", "http://localhost:5173"],
+    origin: [process.env.FRONTEND_URL_URL || "http://localhost:5173", "http://localhost:5173"],
     credentials: true,
   })
 );
