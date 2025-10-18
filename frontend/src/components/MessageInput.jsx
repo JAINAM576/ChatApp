@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
+import { useAuthStore } from "../store/useAuthStore";
 import { Image, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -7,7 +8,9 @@ const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const { sendMessage, selectedUser } = useChatStore();
+  const { socket } = useAuthStore();
+  const typingTimeoutRef = useRef(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -46,6 +49,33 @@ const MessageInput = () => {
       console.error("Failed to send message:", error);
     }
   };
+
+  // Handle typing events
+  useEffect(() => {
+    if (!selectedUser || !socket) return;
+
+    const handleTyping = () => {
+      if (text.trim()) {
+        socket.emit("startTyping", { receiverId: selectedUser._id });
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+        typingTimeoutRef.current = setTimeout(() => {
+          socket.emit("stopTyping", { receiverId: selectedUser._id });
+        }, 1000);
+      } else {
+        socket.emit("stopTyping", { receiverId: selectedUser._id });
+      }
+    };
+
+    handleTyping();
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [text, selectedUser, socket]);
 
   return (
     <div className="p-4 w-full">

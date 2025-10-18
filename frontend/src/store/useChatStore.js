@@ -12,6 +12,7 @@ export const useChatStore = create((set, get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  userLastSeen: {},
 
   getUsers: async (q) => {
     set({ isUsersLoading: true });
@@ -19,7 +20,15 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get("/messages/users", {
         params: q ? { q } : undefined,
       });
-      set({ users: res.data });
+      const users = res.data;
+      // Update last seen for each user
+      const lastSeenUpdates = {};
+      users.forEach(user => {
+        if (user.lastSeen) {
+          lastSeenUpdates[user._id] = user.lastSeen;
+        }
+      });
+      set({ users, userLastSeen: { ...get().userLastSeen, ...lastSeenUpdates } });
       // Also get pinned chats
       await get().getPinnedChats();
       await get().getArchivedChats();

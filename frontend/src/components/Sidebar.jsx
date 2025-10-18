@@ -7,6 +7,22 @@ import { Users, Pin } from "lucide-react";
 import PinButton from "./PinButton";
 import ArchiveButton from "./ArchiveButton";
 
+const formatLastSeen = (lastSeen) => {
+  if (!lastSeen) return "";
+  const now = new Date();
+  const lastSeenDate = new Date(lastSeen);
+  const diffInMs = now - lastSeenDate;
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) return "Just now";
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+  if (diffInDays < 7) return `${diffInDays}d ago`;
+  return lastSeenDate.toLocaleDateString();
+};
+
 const Sidebar = () => {
   const {
     getUsers,
@@ -140,7 +156,7 @@ const Sidebar = () => {
                   <div className="hidden lg:block text-left min-w-0">
                     <div className="font-medium truncate">{user.fullName}</div>
                     <div className="text-sm text-zinc-400">
-                      {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                      {onlineUsers.includes(user._id) ? "Online" : formatLastSeen(user.lastSeen)}
                     </div>
                   </div>
                 </button>
@@ -255,7 +271,7 @@ const Sidebar = () => {
               <div className="hidden lg:block text-left min-w-0">
                 <div className="font-medium truncate">{user.fullName}</div>
                 <div className="text-sm text-zinc-400">
-                  {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                  {onlineUsers.includes(user._id) ? "Online" : formatLastSeen(user.lastSeen)}
                 </div>
               </div>
             </button>
