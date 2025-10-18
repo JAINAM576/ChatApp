@@ -31,13 +31,18 @@ export const addMembers = async (req, res) => {
   try {
     const { groupId } = req.params;
     const { userIds } = req.body;
+    const {user} = req;
 
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
 
+    if(group.admin === user._id){
+      return res.status(401).json({message:"Unauthorized operation"})
+    }
+
     const updatedMembers = new Set([
       ...group.members.map((id) => id.toString()),
-      ...userIds,
+      userIds,
     ]);
     group.members = Array.from(updatedMembers);
 
@@ -46,6 +51,41 @@ export const addMembers = async (req, res) => {
     res.json({
       success: true,
       message: "Members added successfully",
+      members: group.members,
+    });
+  } catch (error) {
+    console.error("Error adding members:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const removeMembers = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { userIds } = req.body;
+    const { user } = req;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    if (group.admin.toString() !== user._id.toString()) {
+      return res.status(401).json({ message: "Unauthorized operation" });
+    }
+
+    if (group.admin.toString() === userIds.toString()) {
+      return res.status(400).json({ message: "Admin cannot be removed" });
+    }
+
+    const updatedMembers = group.members.filter(
+      (memberId) => memberId.toString() !== userIds.toString()
+    );
+
+    group.members = updatedMembers;
+    await group.save();
+
+    res.json({
+      success: true,
+      message: "Members removed successfully",
       members: group.members,
     });
   } catch (error) {

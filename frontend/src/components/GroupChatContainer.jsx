@@ -17,13 +17,14 @@ const GroupChatContainer = () => {
     subscribeToGroupMessages,
     unsubscribeFromGroupMessages,
     addGroupMembers,
+    removeGroupMembers,
   } = useChatStore();
 
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
-  const [showAddMembers, setShowAddMembers] = useState(false);
-  const [selectedUserIds, setSelectedUserIds] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
+  const [showManageMembers,setShowManageMembers] = useState(false)
+  const [activeTab,setActiveTab] = useState("add")
+  const [memberIds,setMemberIds] = useState(new Set(selectedGroup.members.map(m => m._id)))
 
   useEffect(() => {
     if (!selectedGroup?._id) return;
@@ -38,35 +39,43 @@ const GroupChatContainer = () => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [groupMessages]);
 
-  const toggleUserSelection = (userId) => {
-    setSelectedUserIds((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
-  };
-
-  const handleAddMembers = async () => {
+  const handleAddMembers = async (userId) => {
     try {
-      if (selectedUserIds.length === 0) {
-        alert("Please select at least one user.");
+      if (!userId) {
+        alert("Please select the user.");
         return;
       }
-
-      setIsAdding(true);
-      await addGroupMembers(selectedGroup._id, selectedUserIds);
+      const data = await addGroupMembers(selectedGroup._id, userId);
+      setMemberIds(new Set(data.members.map((m) => m)));
       alert("Members added successfully!");
-      setShowAddMembers(false);
-      setSelectedUserIds([]);
     } catch (error) {
       console.error("Error adding members:", error);
       alert("Failed to add members");
-    } finally {
-      setIsAdding(false);
     }
   };
 
-  if (isGroupMessagesLoading) {
+  const handleRemoveMembers = async (userId) => {
+    try {
+      if (!userId) {
+        alert("Please select the user.");
+        return;
+      }
+      const data = await removeGroupMembers(selectedGroup._id, userId);
+      setMemberIds(new Set(data.members.map((m) => m)));
+      alert("Members removed successfully!");
+    } catch (error) {
+      console.error("Error adding members:", error);
+      alert("Failed to add members");
+    }
+  };
+  const nonMembers = users.filter((user) => !memberIds.has(user._id));
+  const memberUsers = users.filter(
+    (user) => !nonMembers.some((non) => non._id === user._id)
+  );
+
+  const isAdmin = authUser?._id === selectedGroup?.admin
+
+  if (isGroupMessagesLoading || isUsersLoading) {
     return (
       <div className="flex-1 flex flex-col overflow-auto">
         <ChatHeader isGroup />
@@ -79,13 +88,93 @@ const GroupChatContainer = () => {
   return (
     <div className="flex-1 flex flex-col overflow-auto">
       <ChatHeader isGroup groupName={selectedGroup?.name} />
-      {/* 🆕 Add Members Button */}
-      <button
-        onClick={() => setShowAddMembers(true)}
-        className="btn btn-sm btn-outline"
-      >
-        Add Members
-      </button>
+
+      {isAdmin && (
+        <div className="flex items-center justify-end gap-2 mt-3">
+          <button
+            onClick={() => setShowManageMembers(true)}
+            className="px-3 py-1.5 rounded-md btn btn-outline border bg-base-100 border-gray-300 hover:bg-base-300 text-sm font-medium"
+          >
+            Manage Members
+          </button>
+        </div>
+      )}
+
+      {showManageMembers && (
+        <div className="fixed inset-0 flex items-center justify-center bg-base-300 z-50">
+          <div className="bg-base-100 p-5 rounded-2xl shadow-xl w-[400px]">
+            <h2 className="text-lg font-semibold mb-3">Manage Members</h2>
+
+            <div className="flex gap-2 mb-4 border-b pb-2">
+              <button
+                className={`flex-1 py-1 text-sm font-medium border-b-2 ${
+                  activeTab === "add"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500"
+                }`}
+                onClick={() => setActiveTab("add")}
+              >
+                Add
+              </button>
+              <button
+                className={`flex-1 py-1 text-sm font-medium border-b-2 ${
+                  activeTab === "remove"
+                    ? "border-red-500 text-red-600"
+                    : "border-transparent text-gray-500"
+                }`}
+                onClick={() => setActiveTab("remove")}
+              >
+                Remove
+              </button>
+            </div>
+
+            <div className="max-h-56 overflow-y-auto flex flex-col gap-2">
+              {activeTab === "add" ? (
+                nonMembers.length > 0 ? (
+                  nonMembers.map((user) => (
+                    <div
+                      key={user._id}
+                      className="flex items-center justify-between py-1 px-2 hover:bg-base-300 rounded-md"
+                    >
+                      <span>{user.fullName}</span>
+                      <button
+                        onClick={() => handleAddMembers(user._id)}
+                        className="text-blue-600 text-sm font-medium"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div>All contacts are added</div>
+                )
+              ) : (
+                memberUsers.map((member) => (
+                  <div
+                    key={member._id}
+                    className="flex items-center justify-between py-1 px-2 hover:bg-base-300 rounded-md"
+                  >
+                    <span>{member.fullName}</span>
+                    <button
+                      onClick={() => handleRemoveMembers(member._id)}
+                      className="text-red-600 text-sm font-medium"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowManageMembers(false)}
+              className="w-full py-1.5 rounded-md btn btn-outline bg-base-100 hover:bg-base-300 text-sm font-medium"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {groupMessages.map((msg) => (
           <div
@@ -124,69 +213,6 @@ const GroupChatContainer = () => {
       </div>
 
       <MessageInput isGroup />
-      {/* 🆕 Add Members Modal */}
-      {/* 🆕 Add Members Modal */}
-      {showAddMembers && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-base-100 p-6 rounded-lg shadow-lg w-[420px] max-h-[80vh] flex flex-col">
-            <h3 className="text-lg font-bold mb-3">Add Members</h3>
-
-            {isUsersLoading ? (
-              <p className="text-center">Loading users...</p>
-            ) : (
-              <div className="overflow-y-auto flex-1 mb-3 space-y-2">
-                {users.length === 0 ? (
-                  <p className="text-gray-500 text-sm text-center">
-                    No users found.
-                  </p>
-                ) : (
-                  users.map((user) => (
-                    <div
-                      key={user._id}
-                      className="flex justify-between items-center border rounded-md p-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={user.profilePic || "/avatar.png"}
-                          alt="user"
-                          className="w-8 h-8 rounded-full border"
-                        />
-                        <span>{user.fullName}</span>
-                      </div>
-                      <button
-                        className={`btn btn-xs ${
-                          selectedUserIds.includes(user._id)
-                            ? "btn-error"
-                            : "btn-success"
-                        }`}
-                        onClick={() => toggleUserSelection(user._id)}
-                      >
-                        {selectedUserIds.includes(user._id) ? "–" : "+"}
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 mt-3">
-              <button
-                onClick={() => setShowAddMembers(false)}
-                className="btn btn-sm btn-ghost"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddMembers}
-                disabled={isAdding}
-                className="btn btn-sm btn-primary"
-              >
-                {isAdding ? "Adding..." : "Add Selected"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

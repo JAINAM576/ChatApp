@@ -251,7 +251,7 @@ export const useChatStore = create((set, get) => ({
       toast.error(error.response?.data?.error || "Failed to delete message");
     }
   },
-  
+
   setSelectedGroup: (selectedGroup) => set({ selectedGroup }),
 
   getGroups: async () => {
@@ -364,6 +364,30 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       console.error("Error adding members:", error);
       toast.error(error.response?.data?.message || "Failed to add members");
+    }
+  },
+
+  removeGroupMembers: async (groupId, userIds) => {
+    try {
+      const res = await axiosInstance.post(
+        `/groups/${groupId}/remove-members`,
+        { userIds },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      toast.success(res.data.message || "Members removed successfully!");
+
+      set((state) => ({
+        groups: state.groups.map((group) =>
+          group._id === groupId
+            ? { ...group, members: res.data.members }
+            : group
+        ),
+      }));
+      return res.data;
+    } catch (error) {
+      console.error("Error removing members:", error);
+      toast.error(error.response?.data?.message || "Failed to remove members");
     }
   },
 }));
