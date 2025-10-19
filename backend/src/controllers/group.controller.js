@@ -113,3 +113,37 @@ export const getUserGroups = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const leaveGroup = async (req, res) => {
+  try {
+    const { user } = req;
+    const { groupId } = req.params;
+
+    const group = await Group.findById(groupId);
+    if (!group.members.includes(user._id)) {
+      return res
+        .status(401)
+        .json({ message: "You are not a member of this group" });
+    }
+
+    if (group.admin.toString() === user._id.toString()) {
+      return res
+        .status(400)
+        .json({ message: "Admin cannot leave the group directly" });
+    }
+
+    group.members = group.members.filter(
+      (memberId) => memberId.toString() !== user._id.toString()
+    );
+
+    await group.save();
+    res.json({
+      success: true,
+      message: "Left group successfully",
+      members: group.members,
+    });
+  } catch (error) {
+    console.error("❌ Error leaving group:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
