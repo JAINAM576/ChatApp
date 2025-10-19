@@ -6,7 +6,7 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { formatMessageTime } from "../lib/utils";
 
-const GroupChatContainer = () => {
+const GroupChatContainer = ({ showSidebar, setShowSidebar }) => {
   const {
     users,
     isUsersLoading,
@@ -23,9 +23,11 @@ const GroupChatContainer = () => {
 
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
-  const [showManageMembers,setShowManageMembers] = useState(false)
-  const [activeTab,setActiveTab] = useState("add")
-  const [memberIds,setMemberIds] = useState(new Set(selectedGroup.members.map(m => m._id)))
+  const [showManageMembers, setShowManageMembers] = useState(false);
+  const [activeTab, setActiveTab] = useState("add");
+  const [memberIds, setMemberIds] = useState(
+    new Set(selectedGroup.members.map((m) => m._id))
+  );
 
   useEffect(() => {
     if (!selectedGroup?._id) return;
@@ -74,12 +76,16 @@ const GroupChatContainer = () => {
     (user) => !nonMembers.some((non) => non._id === user._id)
   );
 
-  const isAdmin = authUser?._id === selectedGroup?.admin
+  const isAdmin = authUser?._id === selectedGroup?.admin;
 
   if (isGroupMessagesLoading || isUsersLoading) {
     return (
       <div className="flex-1 flex flex-col overflow-auto">
-        <ChatHeader isGroup />
+        <ChatHeader
+          isGroup
+          showSidebar={showSidebar}
+          setShowSidebar={setShowSidebar}
+        />
         <MessageSkeleton />
         <MessageInput isGroup />
       </div>
@@ -88,7 +94,12 @@ const GroupChatContainer = () => {
 
   return (
     <div className="flex-1 flex flex-col overflow-auto">
-      <ChatHeader isGroup groupName={selectedGroup?.name} />
+      <ChatHeader
+        isGroup
+        groupName={selectedGroup?.name}
+        showSidebar={showSidebar}
+        setShowSidebar={setShowSidebar}
+      />
 
       {isAdmin ? (
         <div className="flex items-center justify-end gap-2 mt-3">
