@@ -46,31 +46,32 @@ const MessageActions = ({ message, onEdit, onDelete }) => {
             }}
             title="Edit"
           >
-            <Pencil size={14} />
+            <Pencil size={14}  className="sm:w-[14px] sm:h-[14px]" />
           </button>
           <button
             className="btn btn-ghost btn-circle btn-xs text-red-500"
             onClick={doDelete}
             title="Delete"
           >
-            <Trash2 size={14} />
+            <Trash2 size={14} className="sm:w-[14px] sm:h-[14px]"  />
           </button>
         </div>
       )}
 
+      {/* RESPONSIVE: Edit input with mobile-friendly sizing */}
       {isEditing && (
-        <div className="mt-2 flex items-center gap-2 bg-base-200 p-2 rounded">
+        <div className="mt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-base-200 p-2 rounded">
           <input
-            className="input input-xs input-bordered w-48"
+            className="input input-xs sm:input-sm input-bordered w-full sm:w-48"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             autoFocus
           />
-          <button className="btn btn-xs btn-primary" onClick={saveEdit}>
+          <button className="btn btn-xs btn-primary flex-1 sm:flex-none" onClick={saveEdit}>
             Save
           </button>
           <button
-            className="btn btn-xs"
+            className="btn btn-xs flex-1 sm:flex-none"
             onClick={() => {
               setIsEditing(false);
               setDraft(message.text || "");
@@ -84,7 +85,7 @@ const MessageActions = ({ message, onEdit, onDelete }) => {
   );
 };
 
-const ChatContainer = () => {
+const ChatContainer = ({showSidebar,setShowSidebar}) => {
   const {
     messages,
     getMessages,
@@ -121,7 +122,7 @@ const ChatContainer = () => {
   if (isMessagesLoading) {
     return (
       <div className="flex-1 flex flex-col overflow-auto">
-        <ChatHeader />
+        <ChatHeader  showSidebar={showSidebar} setShowSidebar={setShowSidebar} />
         <MessageSkeleton />
         <MessageInput />
       </div>
@@ -130,18 +131,22 @@ const ChatContainer = () => {
 
   return (
     <div className="flex-1 flex flex-col overflow-auto">
-      <ChatHeader />
+      <ChatHeader  showSidebar={showSidebar} setShowSidebar={setShowSidebar} />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* RESPONSIVE: Messages container with mobile-friendly spacing */}
+
+
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
         {messages.map((message, index) => {
           const previousMessage = index > 0 ? messages[index - 1] : null;
           const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
           
           return (
             <div key={message._id}>
+                     {/* RESPONSIVE: Date separator with mobile-friendly text size */}
               {showDateSeparator && (
-                <div className="flex justify-center my-4">
-                  <div className="bg-base-200 text-base-content/70 px-3 py-1 rounded-full text-xs font-medium">
+                <div className="flex justify-center my-3 sm:my-4">
+                  <div className="bg-base-200 text-base-content/70 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium">
                     {formatMessageDate(message.createdAt)}
                   </div>
                 </div>
@@ -152,8 +157,9 @@ const ChatContainer = () => {
                 }`}
                 ref={index === messages.length - 1 ? messageEndRef : null}
               >
+                {/* RESPONSIVE: Avatar with mobile-friendly sizing */}
                 <div className=" chat-image avatar">
-                  <div className="size-10 rounded-full border">
+                  <div className="size-8 sm:size-10 rounded-full border">
                     <img
                       src={
                         message.senderId === authUser._id
@@ -164,17 +170,19 @@ const ChatContainer = () => {
                     />
                   </div>
                 </div>
+                    {/* RESPONSIVE: Timestamp with mobile-friendly text size */}
                 <div className="chat-header mb-1">
-                  <time className="text-xs opacity-50 ml-1">
+                  <time className="text-[10px] sm:text-xs opacity-50 ml-1">
                     {formatMessageTime(message.createdAt)}
                   </time>
                 </div>
-                <div className="chat-bubble flex flex-col relative group">
+                  {/* RESPONSIVE: Chat bubble with mobile-friendly sizing */}
+                <div className="chat-bubble flex flex-col relative group text-sm sm:text-base max-w-[85%] sm:max-w-none">
                   {message.image && (
                     <img
                       src={message.image}
                       alt="Attachment"
-                      className="sm:max-w-[200px] rounded-md mb-2"
+                      className="max-w-[150px] sm:max-w-[200px] rounded-md mb-2"
                     />
                   )}
                   {message.text && <p>{message.text}</p>}
