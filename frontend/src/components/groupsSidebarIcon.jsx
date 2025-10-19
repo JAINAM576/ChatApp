@@ -13,9 +13,7 @@ const GroupSidebarIcon = ({ group, isActive, onClick }) => {
       >
         {firstLetter}
       </div>
-      <span className="text-sm font-medium text-white truncate">
-        {group.name}
-      </span>
+      <span className="text-sm font-medium truncate">{group.name}</span>
     </div>
   );
 };
