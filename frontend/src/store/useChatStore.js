@@ -525,4 +525,50 @@ export const useChatStore = create((set, get) => ({
       toast.error(error.response?.data?.message || "Failed to leave group");
     }
   },
+
+  addGroupAdmin: async (groupId, userIds) => {
+    try {
+      const res = await axiosInstance.post(
+        `/groups/${groupId}/add-admin`,
+        { userIds },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      toast.success(res.data.message || "Admin added successfully!");
+
+      set((state) => ({
+        groups: state.groups.map((group) =>
+          group._id === groupId ? { ...group, admin: res.data.admin } : group
+        ),
+      }));
+
+      return res.data;
+    } catch (error) {
+      console.error("Error adding admins:", error);
+      toast.error(error.response?.data?.message || "Failed to add admins");
+    }
+  },
+
+  removeGroupAdmin: async (groupId, userIds) => {
+    try {
+      const res = await axiosInstance.post(
+        `/groups/${groupId}/remove-admin`,
+        { userIds },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      toast.success(res.data.message || "Admin removed successfully!");
+
+      set((state) => ({
+        groups: state.groups.map((group) =>
+          group._id === groupId ? { ...group, admin: res.data.admin } : group
+        ),
+      }));
+
+      return res.data;
+    } catch (error) {
+      console.error("Error removing admins:", error);
+      toast.error(error.response?.data?.message || "Failed to remove admins");
+    }
+  },
 }));

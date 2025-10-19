@@ -36,7 +36,7 @@ export const addMembers = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
 
-    if(group.admin === user._id){
+    if(!group.admin.includes(user._id)){
       return res.status(401).json({message:"Unauthorized operation"})
     }
 
@@ -68,11 +68,11 @@ export const removeMembers = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
 
-    if (group.admin.toString() !== user._id.toString()) {
+    if (!group.admin.includes(user._id)) {
       return res.status(401).json({ message: "Unauthorized operation" });
     }
 
-    if (group.admin.toString() === userIds.toString()) {
+    if (group.admin.includes(userIds)) {
       return res.status(400).json({ message: "Admin cannot be removed" });
     }
 
@@ -126,7 +126,7 @@ export const leaveGroup = async (req, res) => {
         .json({ message: "You are not a member of this group" });
     }
 
-    if (group.admin.toString() === user._id.toString()) {
+    if (group.admin.includes(user._id)) {
       return res
         .status(400)
         .json({ message: "Admin cannot leave the group directly" });
@@ -144,6 +144,79 @@ export const leaveGroup = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error leaving group:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const addAdmin = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { userIds } = req.body;
+    const { user } = req;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    if (!group.admin.includes(user._id)) {
+      return res.status(401).json({ message: "Unauthorized operation" });
+    }
+
+    if (!group.members.includes(userIds)) {
+      return res
+        .status(401)
+        .json({ message: "Cannot add non members as admin" });
+    }
+
+    const updatedAdmin = new Set([
+      ...group.admin.map((id) => id.toString()),
+      userIds,
+    ]);
+    group.admin = Array.from(updatedAdmin);
+
+    await group.save();
+
+    res.json({
+      success: true,
+      message: "Admin added successfully",
+      admin: group.admin,
+    });
+  } catch (error) {
+    console.error("Error adding admin:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const removeAdmin = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { userIds } = req.body;
+    const { user } = req;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    if (!group.admin.includes(user._id)) {
+      return res.status(401).json({ message: "Unauthorized operation" });
+    }
+
+    if (group.admin.includes(userIds)) {
+      return res.status(400).json({ message: "This user is not an admin" });
+    }
+
+    const updatedAdmin = group.admin.filter(
+      (adminId) => adminId.toString() !== userIds.toString()
+    );
+
+    group.admin = updatedAdmin;
+    await group.save();
+
+    res.json({
+      success: true,
+      message: "Admin removed successfully",
+      admin: group.admin,
+    });
+  } catch (error) {
+    console.error("Error adding admin:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

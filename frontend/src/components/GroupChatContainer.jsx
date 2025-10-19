@@ -19,6 +19,8 @@ const GroupChatContainer = () => {
     addGroupMembers,
     removeGroupMembers,
     leaveGroup,
+    addGroupAdmin,
+    removeGroupAdmin,
   } = useChatStore();
 
   const { authUser } = useAuthStore();
@@ -26,6 +28,7 @@ const GroupChatContainer = () => {
   const [showManageMembers,setShowManageMembers] = useState(false)
   const [activeTab,setActiveTab] = useState("add")
   const [memberIds,setMemberIds] = useState(new Set(selectedGroup.members.map(m => m._id)))
+  const [adminIds,setAdminIds] = useState(new Set(selectedGroup.admin.map(a => a)))
 
   useEffect(() => {
     if (!selectedGroup?._id) return;
@@ -69,12 +72,42 @@ const GroupChatContainer = () => {
       alert("Failed to add members");
     }
   };
+
+  const handleAddAdmin = async (userId) => {
+    try {
+      if (!userId) {
+        alert("Please select the user.");
+        return;
+      }
+      const data = await addGroupAdmin(selectedGroup._id, userId);
+      setAdminIds(new Set(data.admin.map((a) => a)));
+      alert("Admin added successfully!");
+    } catch (error) {
+      console.error("Error adding admin:", error);
+      alert("Failed to add admin");
+    }
+  };
+
+  const handleRemoveAdmin = async (userId) => {
+    try {
+      if (!userId) {
+        alert("Please select the user.");
+        return;
+      }
+      const data = await removeGroupAdmin(selectedGroup._id, userId);
+      setAdminIds(new Set(data.admin.map((a) => a)));
+      alert("Admin removed successfully!");
+    } catch (error) {
+      console.error("Error adding admin:", error);
+      alert("Failed to add admin");
+    }
+  };
   const nonMembers = users.filter((user) => !memberIds.has(user._id));
   const memberUsers = users.filter(
     (user) => !nonMembers.some((non) => non._id === user._id)
   );
 
-  const isAdmin = authUser?._id === selectedGroup?.admin
+  const isAdmin = selectedGroup.admin.includes(authUser._id)
 
   if (isGroupMessagesLoading || isUsersLoading) {
     return (
@@ -96,7 +129,7 @@ const GroupChatContainer = () => {
             onClick={() => setShowManageMembers(true)}
             className="px-3 py-1.5 rounded-md btn btn-outline border bg-base-100 border-gray-300 hover:bg-base-300 text-sm font-medium"
           >
-            Manage Members
+            Manage Members/Admins
           </button>
         </div>
       ) : (
@@ -134,11 +167,21 @@ const GroupChatContainer = () => {
               >
                 Remove
               </button>
+              <button
+                className={`flex-1 py-1 text-sm font-medium border-b-2 ${
+                  activeTab === "admin"
+                    ? "border-green-500 text-green-600"
+                    : "border-transparent text-gray-500"
+                }`}
+                onClick={() => setActiveTab("admin")}
+              >
+                Manage Admins
+              </button>
             </div>
 
             <div className="max-h-56 overflow-y-auto flex flex-col gap-2">
-              {activeTab === "add" ? (
-                nonMembers.length > 0 ? (
+              {activeTab === "add" &&
+                (nonMembers.length > 0 ? (
                   nonMembers.map((user) => (
                     <div
                       key={user._id}
@@ -155,23 +198,47 @@ const GroupChatContainer = () => {
                   ))
                 ) : (
                   <div>All contacts are added</div>
-                )
-              ) : (
-                memberUsers.map((member) => (
+                ))}
+              {activeTab === "remove" &&
+                memberUsers.map((user) => (
                   <div
-                    key={member._id}
+                    key={user._id}
                     className="flex items-center justify-between py-1 px-2 hover:bg-base-300 rounded-md"
                   >
-                    <span>{member.fullName}</span>
+                    <span>{user.fullName}</span>
                     <button
-                      onClick={() => handleRemoveMembers(member._id)}
+                      onClick={() => handleRemoveMembers(user._id)}
                       className="text-red-600 text-sm font-medium"
                     >
                       Remove
                     </button>
                   </div>
-                ))
-              )}
+                ))}
+
+              {activeTab === "admin" &&
+                memberUsers.map((user) => (
+                  <div
+                    key={user._id}
+                    className="flex items-center justify-between py-1 px-2 hover:bg-base-300 rounded-md"
+                  >
+                    <span>{user.fullName}</span>
+                    {adminIds.has(user._id) ? (
+                      <button
+                        onClick={() => handleRemoveAdmin(user._id)}
+                        className="text-red-600 text-sm font-medium"
+                      >
+                        Demote
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleAddAdmin(user._id)}
+                        className="text-green-600 text-sm font-medium"
+                      >
+                        Promote
+                      </button>
+                    )}
+                  </div>
+                ))}
             </div>
 
             <button
