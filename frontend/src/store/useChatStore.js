@@ -30,12 +30,15 @@ export const useChatStore = create((set, get) => ({
       const users = res.data;
       // Update last seen for each user
       const lastSeenUpdates = {};
-      users.forEach(user => {
+      users.forEach((user) => {
         if (user.lastSeen) {
           lastSeenUpdates[user._id] = user.lastSeen;
         }
       });
-      set({ users, userLastSeen: { ...get().userLastSeen, ...lastSeenUpdates } });
+      set({
+        users,
+        userLastSeen: { ...get().userLastSeen, ...lastSeenUpdates },
+      });
       // Also get pinned chats
       await get().getPinnedChats();
       await get().getArchivedChats();
@@ -214,7 +217,9 @@ export const useChatStore = create((set, get) => ({
 
     socket.on("messageUpdated", (updated) => {
       set({
-        messages: get().messages.map((m) => (m._id === updated._id ? updated : m)),
+        messages: get().messages.map((m) =>
+          m._id === updated._id ? updated : m
+        ),
       });
     });
 
@@ -234,9 +239,13 @@ export const useChatStore = create((set, get) => ({
 
   editMessage: async (messageId, newText) => {
     try {
-      const res = await axiosInstance.put(`/messages/edit/${messageId}`, { text: newText });
+      const res = await axiosInstance.put(`/messages/edit/${messageId}`, {
+        text: newText,
+      });
       set({
-        messages: get().messages.map((m) => (m._id === messageId ? res.data : m)),
+        messages: get().messages.map((m) =>
+          m._id === messageId ? res.data : m
+        ),
       });
     } catch (error) {
       toast.error(error.response?.data?.error || "Failed to edit message");
@@ -308,7 +317,7 @@ export const useChatStore = create((set, get) => ({
         messageData
       );
       // Immediately reflect the sent message for the sender to avoid waiting for socket echo
-      set({ groupMessages: [...get().groupMessages, res.data] });
+      // set({ groupMessages: [...get().groupMessages, res.data] });
     } catch (error) {
       console.error("Error sending group message:", error);
       toast.error(
@@ -390,6 +399,30 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       console.error("Error removing members:", error);
       toast.error(error.response?.data?.message || "Failed to remove members");
+    }
+  },
+
+  leaveGroup: async (groupId) => {
+    try {
+      const res = await axiosInstance.post(
+        `/groups/${groupId}/leave-group`,
+        {},
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      toast.success(res.data.message || "You have left the group!");
+      set((state) => ({
+        groups: state.groups.map((group) =>
+          group._id === groupId
+            ? { ...group, members: res.data.members }
+            : group
+        ),
+      }));
+
+      return res.data;
+    } catch (error) {
+      console.error("Error leaving group:", error);
+      toast.error(error.response?.data?.message || "Failed to leave group");
     }
   },
 }));

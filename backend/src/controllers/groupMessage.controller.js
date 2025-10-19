@@ -11,6 +11,8 @@ export const sendGroupMessage = async (req, res) => {
 
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!group.members.includes(senderId))
+      return res.status(401).json({ message: "You are not in this group" });
 
     let imageUrl = null;
     if (image) {
@@ -58,6 +60,12 @@ export const sendGroupMessage = async (req, res) => {
 export const getGroupMessages = async (req, res) => {
   try {
     const { groupId } = req.params;
+    const senderId = req.user._id;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!group.members.includes(senderId))
+      return res.status(401).json({ message: "You are not in this group" });
 
     const messages = await Message.find({ groupId })
       .populate("senderId", "fullName profilePic")

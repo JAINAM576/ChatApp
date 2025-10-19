@@ -18,6 +18,7 @@ const GroupChatContainer = () => {
     unsubscribeFromGroupMessages,
     addGroupMembers,
     removeGroupMembers,
+    leaveGroup,
   } = useChatStore();
 
   const { authUser } = useAuthStore();
@@ -89,7 +90,7 @@ const GroupChatContainer = () => {
     <div className="flex-1 flex flex-col overflow-auto">
       <ChatHeader isGroup groupName={selectedGroup?.name} />
 
-      {isAdmin && (
+      {isAdmin ? (
         <div className="flex items-center justify-end gap-2 mt-3">
           <button
             onClick={() => setShowManageMembers(true)}
@@ -98,6 +99,13 @@ const GroupChatContainer = () => {
             Manage Members
           </button>
         </div>
+      ) : (
+        <button
+          onClick={() => leaveGroup(selectedGroup._id)}
+          className="px-3 py-1.5 rounded-md btn btn-outline border text-red-400 bg-base-100 border-gray-300 hover:bg-base-300 text-sm font-medium"
+        >
+          Leave Group
+        </button>
       )}
 
       {showManageMembers && (
