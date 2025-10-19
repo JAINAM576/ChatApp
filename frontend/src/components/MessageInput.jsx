@@ -3,7 +3,7 @@ import { useRef, useState, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { Image, Send, X } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "../lib/toast";
 
 const MessageInput = ({ isGroup = false }) => {
   const [text, setText] = useState("");

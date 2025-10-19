@@ -17,6 +17,7 @@ export const connectDB = async () => {
   // If there's no promise, create a new connection
   if (!cached.promise) {
     cached.promise = mongoose.connect(process.env.MONGODB_URI).then((mongoose) => {
+      console.log("Connected to MongoDB");
       return mongoose;
     });
   }

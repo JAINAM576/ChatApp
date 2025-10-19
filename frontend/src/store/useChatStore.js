@@ -1,8 +1,17 @@
 import { create } from "zustand";
-import toast from "react-hot-toast";
+import toast from "../lib/toast";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 import { useEncryptionStore } from "./useEncryptionStore";
+
+const getErrorMessage = (error, fallback = 'An error occurred') => {
+  if (!error) return fallback;
+  if (error.response && error.response.data) {
+    return error.response.data.message || error.response.data.error || JSON.stringify(error.response.data) || fallback;
+  }
+  if (error.message) return error.message;
+  return String(error);
+};
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -43,7 +52,7 @@ export const useChatStore = create((set, get) => ({
       await get().getPinnedChats();
       await get().getArchivedChats();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(getErrorMessage(error, 'Failed to fetch users'));
     } finally {
       set({ isUsersLoading: false });
     }
@@ -156,7 +165,7 @@ export const useChatStore = create((set, get) => ({
 
       set({ messages: decryptedMessages });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(getErrorMessage(error, 'Failed to fetch messages'));
     } finally {
       set({ isMessagesLoading: false });
     }
@@ -181,7 +190,7 @@ export const useChatStore = create((set, get) => ({
       );
       set({ messages: [...messages, res.data] });
     } catch (error) {
-      toast.error(error.response.data.messages);
+      toast.error(getErrorMessage(error, 'Failed to send message'));
     }
   },
 

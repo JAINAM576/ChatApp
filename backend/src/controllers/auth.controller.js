@@ -10,6 +10,11 @@ export const signup = async(req,res) =>{
         if(!fullName || !email || !password){
             return res.status(400).json({message: "All fields are required!"});
         }
+        // basic email format validation
+        const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: "Invalid email address" });
+        }
         // hash password
         if(password.length < 6){
             return res.status(400).json({message: "Password must be at least 6 characters"});
