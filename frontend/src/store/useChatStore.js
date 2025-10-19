@@ -307,6 +307,8 @@ export const useChatStore = create((set, get) => ({
         `/group-messages/send/${groupId}`,
         messageData
       );
+      // Immediately reflect the sent message for the sender to avoid waiting for socket echo
+      set({ groupMessages: [...get().groupMessages, res.data] });
     } catch (error) {
       console.error("Error sending group message:", error);
       toast.error(
