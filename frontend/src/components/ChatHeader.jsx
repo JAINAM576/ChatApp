@@ -56,7 +56,7 @@ const ChatHeader = ({ isGroup = false }) => {
               </p>
             ) : (
               <p className="text-sm text-base-content/70">
-                {onlineUsers.includes(chatTarget._id) ? "Online" : "Offline"}
+                {/* {onlineUsers.includes(chatTarget._id) ? "Online" : "Offline"} */}
               </p>
             )}
           </div>
