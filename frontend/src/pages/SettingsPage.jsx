@@ -1,6 +1,10 @@
 import { THEMES } from "../constants/index.js";
 import { useThemeStore } from "../store/useThemeStore.js";
 import { Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+} from "lucide-react";
 
 const PREVIEW_MESSAGES = [
   { id: 1, content: "Hey! How's it going?", isSent: false },
@@ -9,10 +13,20 @@ const PREVIEW_MESSAGES = [
 
 const SettingsPage = () => {
   const { theme, setTheme } = useThemeStore();
+  const navigate = useNavigate();
 
   return (
     <div className="h-screen container mx-auto px-4 pt-20 max-w-5xl">
       <div className="space-y-6">
+        <div className="flex items-center mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="btn btn-ghost btn-circle"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-2xl font-bold ml-2">Settings</h1>
+        </div>
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold">Theme</h2>
           <p className="text-sm text-base-content/70">Choose a theme for your chat interface</p>
@@ -114,4 +128,4 @@ const SettingsPage = () => {
   );
 };
 
-export default SettingsPage
+export default SettingsPage;
