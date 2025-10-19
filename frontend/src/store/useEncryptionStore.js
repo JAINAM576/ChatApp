@@ -8,7 +8,7 @@ import {
     importAESKey,
     exportAESKey
 } from "../lib/encryption";
-import toast from "react-hot-toast";
+import toast from "../lib/toast";
 
 export const useEncryptionStore = create((set, get) => ({
     isEncryptionEnabled: true,

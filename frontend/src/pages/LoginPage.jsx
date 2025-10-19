@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
 import Footer from "../components/Footer";
 import { FaGoogle, FaGithub } from "react-icons/fa";
-import toast from "react-hot-toast";
+import toast from "../lib/toast";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);

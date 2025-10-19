@@ -1,6 +1,6 @@
 import {create} from "zustand"
 import {axiosInstance} from '../lib/axios'
-import toast from 'react-hot-toast'
+import toast from '../lib/toast'
 import {io} from "socket.io-client"
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
@@ -28,6 +28,19 @@ export const useAuthStore = create((set,get) =>({
         }
     },
 
+    // Helper to extract error message safely
+    _getErrorMessage: (error, fallback = 'An error occurred') => {
+        if (!error) return fallback;
+        // Axios-like error
+        if (error.response && error.response.data) {
+            // Prefer structured message fields
+            return error.response.data.message || error.response.data.error || JSON.stringify(error.response.data) || fallback;
+        }
+        // plain Error
+        if (error.message) return error.message;
+        return String(error);
+    },
+
     signup: async(data) =>{
         set({isSigningUp: true});
         try{
@@ -35,9 +48,11 @@ export const useAuthStore = create((set,get) =>({
             set({authUser: res.data});
             toast.success("Account created successfully");
             get().connectSocket()
+            return res;
         } catch(error){
-            toast.error(error.response?.data?.message);
-            console.log("Error in signup: ",error)
+            console.log("Error in signup: ", error);
+            // Rethrow and let caller (page) display the toast to avoid duplicate messages
+            throw error;
         } finally{
             set({isSigningUp: false});
         }
@@ -51,7 +66,8 @@ export const useAuthStore = create((set,get) =>({
             toast.success("Logged in successfully")
             get().connectSocket()
         } catch(error){
-            toast.error(error.response.data.message)
+            const msg = get()._getErrorMessage(error, 'Login failed');
+            toast.error(msg);
         } finally {
             set({isLoggingIn: false});
         }
@@ -65,10 +81,22 @@ export const useAuthStore = create((set,get) =>({
             get().disconnectSocket();
             
             // Clear encryption data
-            const { clearEncryptionData } = await import('./useEncryptionStore');
-            clearEncryptionData();
+                try {
+                    const mod = await import('./useEncryptionStore');
+                    // module exports `useEncryptionStore` (a zustand store). Clear via getState()
+                    if (mod && mod.useEncryptionStore && typeof mod.useEncryptionStore.getState === 'function') {
+                        const clearFn = mod.useEncryptionStore.getState().clearEncryptionData;
+                        if (typeof clearFn === 'function') {
+                            clearFn();
+                        }
+                    }
+                } catch (err) {
+                    // Non-fatal: log and continue
+                    console.warn('Unable to clear encryption data on logout:', err);
+                }
         } catch(error){
-            toast.error(error.response.data.message)
+            const msg = get()._getErrorMessage(error, 'Logout failed');
+            toast.error(msg);
         }
     },
     
@@ -79,7 +107,8 @@ export const useAuthStore = create((set,get) =>({
             set({authUser: res.data});
             toast.success("Profile updated successfully");
         } catch(error){
-            toast.error(error.response.data.message);
+            const msg = get()._getErrorMessage(error, 'Failed to update profile');
+            toast.error(msg);
         } finally{
             set({isUpdatingProfile: false});
         }
