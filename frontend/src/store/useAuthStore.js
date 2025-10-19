@@ -142,6 +142,60 @@ export const useAuthStore = create((set,get) =>({
                 return { typingUsers: newTypingUsers };
             });
         });
+
+        // Global handlers: always listen for incoming messages so we can show
+        // notifications even when a specific chat/group is not open.
+        socket.on("newMessage", async (message) => {
+            try {
+                console.debug('[socket] newMessage received', message);
+                // dynamic import to avoid circular dependency
+                const mod = await import('./useChatStore');
+                const chatStore = mod.useChatStore;
+                const currentUser = get().authUser;
+                if (!chatStore || !currentUser) return;
+
+                // If the message is for the currently selected user, the per-chat
+                // subscription already handles appending, but append here as a
+                // safeguard so unread counts / lists stay in sync.
+                const selectedUser = chatStore.getState().selectedUser;
+                if (selectedUser && message.senderId === selectedUser._id) {
+                    // append to messages for open chat
+                    chatStore.setState((s) => ({ messages: [...s.messages, message] }));
+                } else {
+                    // not the open chat: append to top-level messages array
+                    chatStore.setState((s) => ({ messages: [...s.messages, message] }));
+                    // show notification (chat store will handle decrypting if needed)
+                    if (message.senderId !== currentUser._id) {
+                        chatStore.getState().notifyNewMessage(message, { isGroup: false });
+                    }
+                }
+            } catch (err) {
+                console.warn('global newMessage handler error', err);
+            }
+        });
+
+        socket.on("newGroupMessage", async (message) => {
+            try {
+                console.debug('[socket] newGroupMessage received', message);
+                const mod = await import('./useChatStore');
+                const chatStore = mod.useChatStore;
+                const currentUser = get().authUser;
+                if (!chatStore || !currentUser) return;
+
+                const selectedGroup = chatStore.getState().selectedGroup;
+                // append to group messages list so history/unread works
+                chatStore.setState((s) => ({ groupMessages: [...s.groupMessages, message] }));
+
+                // notify when group not open
+                if (!selectedGroup || message.groupId !== selectedGroup._id) {
+                    if (message.senderId !== currentUser._id) {
+                        chatStore.getState().notifyNewMessage(message, { isGroup: true });
+                    }
+                }
+            } catch (err) {
+                console.warn('global newGroupMessage handler error', err);
+            }
+        });
     },
 
     disconnectSocket: () => {
