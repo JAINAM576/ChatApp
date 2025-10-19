@@ -201,8 +201,8 @@ export const useChatStore = create((set, get) => ({
     const socket = useAuthStore.getState().socket;
 
     socket.on("newMessage", async (newMessage) => {
-      if (newMessage.senderId !== selectedUser._id) return;
-
+      // If this message is for a different selected user, still notify
+      const currentUser = useAuthStore.getState().authUser;
       // Decrypt message if it's encrypted
       if (newMessage.isEncrypted && newMessage.encryptedText) {
         try {
@@ -219,9 +219,18 @@ export const useChatStore = create((set, get) => ({
         }
       }
 
-      set({
-        messages: [...get().messages, newMessage],
-      });
+      // If the message is for the currently open chat, just append it; otherwise notify
+      if (selectedUser && newMessage.senderId === selectedUser._id) {
+        set({ messages: [...get().messages, newMessage] });
+      } else {
+        // append to messages list (so unread count can use it) and notify
+        set({ messages: [...get().messages, newMessage] });
+        // don't notify about our own messages
+        if (currentUser && newMessage.senderId !== currentUser._id) {
+          get().notifyNewMessage(newMessage, { isGroup: false });
+        }
+      }
+      
     });
 
     socket.on("messageUpdated", (updated) => {
@@ -319,6 +328,83 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  // Notify user about an incoming message (one-to-one or group)
+  notifyNewMessage: async (message, { isGroup = false } = {}) => {
+    console.debug('[notifyNewMessage] called', { messageId: message._id, isGroup });
+    try {
+      const currentUser = useAuthStore.getState().authUser;
+      if (!currentUser) return;
+      // Don't notify for messages sent by ourselves
+      if (message.senderId === currentUser._id) return;
+
+      // Resolve sender and title
+      const sender = get().users.find((u) => u._id === message.senderId) || {};
+      const senderName = sender.name || sender.username || 'Someone';
+      const title = isGroup
+        ? get().groups.find((g) => g._id === message.groupId)?.name || 'Group'
+        : senderName;
+
+      // Try to obtain a short snippet. If encrypted, attempt decryption and fall back to marker
+      let snippet = '';
+      if (message.isEncrypted && message.encryptedText) {
+        try {
+          snippet = await useEncryptionStore
+            .getState()
+            .decryptReceivedMessage(message.encryptedText, message.senderId);
+        } catch (e) {
+          snippet = '[Encrypted message]';
+        }
+      } else {
+        snippet = message.text || '';
+      }
+
+      // normalize snippet
+      snippet = String(snippet).replace(/\s+/g, ' ').trim().slice(0, 120);
+      const body = isGroup ? `${senderName}: ${snippet}` : snippet;
+
+      // Show a concise info toast. The toast wrapper will dedupe identical messages.
+      console.debug('[notifyNewMessage] showing toast', { title, body });
+      if (body) {
+        toast.info(`${title} — ${body}`, { duration: 4000 });
+      } else {
+        toast.info(`${title} — new message`, { duration: 3000 });
+      }
+
+      // Also show a native desktop notification when permitted so user receives
+      // notifications even when interacting with other pages in the app.
+      try {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+          const showNative = async () => {
+            if (Notification.permission === 'granted') {
+              const n = new Notification(title, { body: body || 'New message' });
+              // Bring app to focus when user clicks notification
+              n.onclick = () => {
+                try {
+                  window.focus();
+                } catch (e) {}
+              };
+            } else if (Notification.permission === 'default') {
+              const p = await Notification.requestPermission();
+              if (p === 'granted') {
+                const n = new Notification(title, { body: body || 'New message' });
+                n.onclick = () => {
+                  try { window.focus(); } catch (e) {}
+                };
+              }
+            }
+          };
+          // don't await to avoid blocking UI
+          showNative().catch((e) => console.warn('native notification failed', e));
+        }
+      } catch (e) {
+        console.warn('notifyNewMessage: native notification error', e);
+      }
+    } catch (err) {
+      // never throw from notification helper
+      console.error('notifyNewMessage error', err);
+    }
+  },
+
   sendGroupMessage: async (groupId, messageData) => {
     try {
       const res = await axiosInstance.post(
@@ -341,19 +427,24 @@ export const useChatStore = create((set, get) => ({
     const socket = useAuthStore.getState().socket;
 
     socket.on("newGroupMessage", (newMessage) => {
-      if (newMessage.groupId !== selectedGroup._id) return;
-
       const { groupMessages } = get();
       const currentUser = useAuthStore.getState().authUser;
-      if (newMessage.senderId === currentUser._id) {
-        return;
-      }
+
+      // If this message belongs to another group, still save it and notify
+      const isForSelected = selectedGroup && newMessage.groupId === selectedGroup._id;
+
+      if (newMessage.senderId === currentUser._id) return;
 
       const exists = groupMessages.some((msg) => msg._id === newMessage._id);
-      if (exists) {
-        return;
-      }
+      if (exists) return;
+
+      // append to group messages
       set({ groupMessages: [...groupMessages, newMessage] });
+
+      // If group is not open, show notification
+      if (!isForSelected) {
+        get().notifyNewMessage(newMessage, { isGroup: true });
+      }
     });
   },
 
@@ -432,6 +523,52 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       console.error("Error leaving group:", error);
       toast.error(error.response?.data?.message || "Failed to leave group");
+    }
+  },
+
+  addGroupAdmin: async (groupId, userIds) => {
+    try {
+      const res = await axiosInstance.post(
+        `/groups/${groupId}/add-admin`,
+        { userIds },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      toast.success(res.data.message || "Admin added successfully!");
+
+      set((state) => ({
+        groups: state.groups.map((group) =>
+          group._id === groupId ? { ...group, admin: res.data.admin } : group
+        ),
+      }));
+
+      return res.data;
+    } catch (error) {
+      console.error("Error adding admins:", error);
+      toast.error(error.response?.data?.message || "Failed to add admins");
+    }
+  },
+
+  removeGroupAdmin: async (groupId, userIds) => {
+    try {
+      const res = await axiosInstance.post(
+        `/groups/${groupId}/remove-admin`,
+        { userIds },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      toast.success(res.data.message || "Admin removed successfully!");
+
+      set((state) => ({
+        groups: state.groups.map((group) =>
+          group._id === groupId ? { ...group, admin: res.data.admin } : group
+        ),
+      }));
+
+      return res.data;
+    } catch (error) {
+      console.error("Error removing admins:", error);
+      toast.error(error.response?.data?.message || "Failed to remove admins");
     }
   },
 }));

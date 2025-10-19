@@ -1,7 +1,8 @@
 import React from 'react'
 import {useState} from 'react'
 import {useAuthStore} from '../store/useAuthStore.js'
-import { Camera, Mail, User } from "lucide-react";
+import { Camera, Mail, User, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
   const {authUser, isUpdatingProfile, updateProfile} = useAuthStore();
@@ -18,10 +19,20 @@ const ProfilePage = () => {
       await updateProfile({profilePic: base64Image})
     }
   }
+  const navigate = useNavigate();
 
   return (
     <div className="h-screen pt-20">
       <div className="max-w-2xl mx-auto p-4 py-8">
+        <div className="flex items-center mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="btn btn-ghost btn-circle"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-2xl font-bold ml-2">Profile</h1>
+        </div>
         <div className="bg-base-300 rounded-xl p-6 space-y-8">
           <div className="text-center">
             <h1 className="text-2xl font-semibold ">Profile</h1>
