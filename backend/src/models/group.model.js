@@ -14,10 +14,12 @@ const groupSchema = new mongoose.Schema(
       required: true,
     },
 
-    admin: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
+    admin: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
 
     members: [
       {
@@ -37,9 +39,10 @@ const groupSchema = new mongoose.Schema(
 );
 
 groupSchema.pre("save", function (next) {
-   if (!this.admin) {
-    this.admin = this.createdBy;
+  if (!this.admin || this.admin.length === 0) {
+    this.admin = [this.createdBy];
   }
+
   if (!this.members.includes(this.createdBy)) {
     this.members.push(this.createdBy);
   }
